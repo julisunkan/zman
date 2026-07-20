@@ -170,8 +170,8 @@
           <span style="font-size:14.5px;color:#666;font-weight:600;">Download file</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <div class="feat-icon feat-icon-brown" style="width:30px;height:30px;font-size:15px;border-radius:8px;flex-shrink:0;"><i class="fas fa-copy"></i></div>
-          <span style="font-size:14.5px;color:#666;font-weight:600;">Copy source</span>
+          <div class="feat-icon feat-icon-brown" style="width:30px;height:30px;font-size:15px;border-radius:8px;flex-shrink:0;"><i class="fas fa-pencil"></i></div>
+          <span style="font-size:14.5px;color:#666;font-weight:600;">Edit &amp; save</span>
         </div>
       </div>
     </div>
@@ -194,11 +194,14 @@
             <div class="history-icon" style="background:rgba(34,197,94,.1);color:var(--green);">
               <i class="fas fa-envelope"></i>
             </div>
-            <div class="history-meta" onclick="downloadNl({{ nl.id }})" style="cursor:pointer;">
+            <a class="history-meta" href="/emailnewsgen/{{ nl.id }}/preview" style="cursor:pointer;text-decoration:none;flex:1;">
               <div class="title">{{ nl.subject }}</div>
               <div class="sub">{{ nl.tone }} &middot; {{ nl.created_at.strftime('%b %d, %Y') }}</div>
-            </div>
+            </a>
             <div id="nl-del-{{ nl.id }}" style="display:flex;align-items:center;gap:4px;">
+              <a href="/emailnewsgen/{{ nl.id }}/preview" class="btn btn-icon" title="Edit">
+                <i class="fas fa-pen" style="font-size:13px;color:var(--green);"></i>
+              </a>
               <button class="btn btn-icon" onclick="askDeleteNl({{ nl.id }})" title="Delete">
                 <i class="fas fa-trash" style="font-size:13px;color:var(--red);"></i>
               </button>
@@ -215,54 +218,15 @@
     </div>
   </div>
 
-  <!-- ── Right: preview ── -->
+  <!-- ── Right: info panel ── -->
   <div class="anim-up d2">
-    <div id="previewPlaceholder" class="preview-placeholder">
+    <div class="preview-placeholder" id="previewPlaceholder">
       <i class="fas fa-envelope-open-text ph-icon"></i>
-      <p>Your newsletter preview will appear here</p>
+      <p>Generate a newsletter to open the editor</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
         <span class="chip chip-green"><i class="fas fa-check"></i> Styled HTML</span>
-        <span class="chip chip-blue"><i class="fas fa-download"></i> Downloadable</span>
-        <span class="chip chip-brown"><i class="fas fa-code"></i> Source included</span>
-      </div>
-    </div>
-
-    <div id="resultSection" class="hidden">
-      <div id="subjectPill" class="subject-pill">
-        <i class="fas fa-envelope"></i>
-        <span id="subjectLine"></span>
-      </div>
-
-      <div class="flex items-center justify-between gap-12" style="margin-bottom:14px;flex-wrap:wrap;">
-        <div class="btn-row">
-          <button class="btn btn-ghost btn-sm" onclick="copyHtml()">
-            <i class="fas fa-copy"></i> Copy HTML
-          </button>
-          <button class="btn btn-success btn-sm" id="downloadBtn">
-            <i class="fas fa-download"></i> Download
-          </button>
-        </div>
-      </div>
-
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('tabPreview', this)">
-          <i class="fas fa-eye"></i> Preview
-        </button>
-        <button class="tab-btn" onclick="switchTab('tabHtml', this)">
-          <i class="fas fa-code"></i> HTML Source
-        </button>
-      </div>
-
-      <div class="tab-panel active" id="tabPreview">
-        <div class="nl-preview-wrap">
-          <iframe id="nlFrame" srcdoc="" style="width:100%;height:520px;border:none;display:block;"></iframe>
-        </div>
-      </div>
-
-      <div class="tab-panel" id="tabHtml">
-        <div class="card" style="padding:0;overflow:hidden;">
-          <pre id="htmlSource" style="padding:18px;font-size:14px;color:#666;overflow-x:auto;max-height:520px;white-space:pre-wrap;word-break:break-all;margin:0;background:transparent;"></pre>
-        </div>
+        <span class="chip chip-blue"><i class="fas fa-pencil"></i> Editable</span>
+        <span class="chip chip-brown"><i class="fas fa-floppy-disk"></i> Auto-saved</span>
       </div>
     </div>
   </div>
@@ -273,19 +237,12 @@
 
 {% block scripts %}
 <script>
-let _nlId = null, _rawHtml = '', _tone = 'Professional';
+let _tone = 'Professional';
 
 function selectTone(el) {
   document.querySelectorAll('.tone-pill').forEach(p => p.classList.remove('selected'));
   el.classList.add('selected');
   _tone = el.dataset.tone;
-}
-
-function switchTab(id, btn) {
-  document.querySelectorAll('#resultSection .tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('#resultSection .tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  btn.classList.add('active');
 }
 
 async function generate() {
@@ -311,55 +268,19 @@ async function generate() {
     });
     const d = await r.json();
     if (d.success) {
-      showResult(d.id, d.subject, d.content_html);
-      prependHistory(d.id, d.subject, _tone);
-      showMsg('Newsletter generated!', 'success');
+      // Redirect to dedicated preview/editor page
+      window.location.href = '/emailnewsgen/' + d.id + '/preview';
     } else {
       showMsg(d.error || 'Generation failed.', 'error');
+      btn.disabled = false;
+      document.getElementById('loader').classList.remove('show');
     }
   } catch(e) {
     showMsg('Network error. Please try again.', 'error');
-  } finally {
     btn.disabled = false;
     document.getElementById('loader').classList.remove('show');
   }
 }
-
-function showResult(id, subject, html) {
-  _nlId = id; _rawHtml = html;
-  document.getElementById('previewPlaceholder').classList.add('hidden');
-  document.getElementById('resultSection').classList.remove('hidden');
-  document.getElementById('subjectLine').textContent = subject;
-  document.getElementById('nlFrame').srcdoc = html;
-  document.getElementById('htmlSource').textContent = html;
-  document.getElementById('downloadBtn').onclick = () => { window.location.href = '/emailnewsgen/' + id + '/download'; };
-  document.querySelectorAll('#resultSection .tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('#resultSection .tab-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('tabPreview').classList.add('active');
-  document.querySelector('#resultSection .tab-btn').classList.add('active');
-}
-
-function prependHistory(id, subject, tone) {
-  const list  = document.getElementById('historyList');
-  const empty = document.getElementById('emptyState');
-  if (empty) empty.remove();
-  const el = document.createElement('div');
-  el.className = 'nl-history-item'; el.id = 'nl-' + id;
-  el.innerHTML = `
-    <div class="history-icon" style="background:rgba(34,197,94,.1);color:var(--green);"><i class="fas fa-envelope"></i></div>
-    <div class="history-meta" onclick="downloadNl(${id})" style="cursor:pointer;">
-      <div class="title">${subject}</div>
-      <div class="sub">${tone} &middot; Just now</div>
-    </div>
-    <div id="nl-del-${id}" style="display:flex;align-items:center;gap:4px;">
-      <button class="btn btn-icon" onclick="askDeleteNl(${id})" title="Delete">
-        <i class="fas fa-trash" style="font-size:13px;color:var(--red);"></i>
-      </button>
-    </div>`;
-  list.prepend(el);
-}
-
-function downloadNl(id) { window.location.href = '/emailnewsgen/' + id + '/download'; }
 
 function askDeleteNl(id) {
   const wrap = document.getElementById('nl-del-' + id);
@@ -372,6 +293,9 @@ function askDeleteNl(id) {
 function cancelDeleteNl(id) {
   const wrap = document.getElementById('nl-del-' + id);
   wrap.innerHTML = `
+    <a href="/emailnewsgen/${id}/preview" class="btn btn-icon" title="Edit">
+      <i class="fas fa-pen" style="font-size:13px;color:var(--green);"></i>
+    </a>
     <button class="btn btn-icon" onclick="askDeleteNl(${id})" title="Delete">
       <i class="fas fa-trash" style="font-size:13px;color:var(--red);"></i>
     </button>`;
@@ -382,17 +306,8 @@ async function doDeleteNl(id) {
   const d = await r.json();
   if (d.success) {
     document.getElementById('nl-' + id)?.remove();
-    if (_nlId === id) {
-      document.getElementById('resultSection').classList.add('hidden');
-      document.getElementById('previewPlaceholder').classList.remove('hidden');
-    }
     showMsg('Deleted.', 'success');
   }
-}
-
-function copyHtml() {
-  if (!_rawHtml) { showMsg('Nothing to copy.', 'warn'); return; }
-  navigator.clipboard.writeText(_rawHtml).then(() => showMsg('HTML copied!', 'success'));
 }
 </script>
 {% endblock %}

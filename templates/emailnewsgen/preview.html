@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}{{ nl.subject }} — Newsletter Preview{% endblock %}
+{% block navbar_brand %}<span class="navbar-brand"><i class="fas fa-envelope-open-text"></i> Newsletter Preview</span>{% endblock %}
+{% block nav_newsletter %}active{% endblock %}
+{% block accent %}#22c55e{% endblock %}
+{% block accent_dark %}#16a34a{% endblock %}
+
+{% block head %}
+<style>
+/* ── Toolbar ── */
+.preview-toolbar {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 18px;
+}
+.preview-toolbar .back-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 15px; border-radius: 10px;
+  background: #111; border: 1px solid #222; color: #888;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all .18s; text-decoration: none;
+}
+.preview-toolbar .back-btn:hover { border-color: #333; color: #ccc; background: #181818; }
+.preview-toolbar .spacer { flex: 1; }
+
+/* ── Subject editor ── */
+.subject-editor-wrap {
+  display: flex; align-items: center; gap: 10px;
+  background: #111; border: 1px solid #1e1e1e;
+  border-radius: 12px; padding: 12px 16px; margin-bottom: 18px;
+  transition: border-color .2s;
+}
+.subject-editor-wrap:focus-within { border-color: var(--accent); }
+.subject-label {
+  font-size: 13px; font-weight: 700; color: #444;
+  white-space: nowrap; flex-shrink: 0;
+}
+.subject-input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #e0e0e0; font-size: 15.5px; font-weight: 700;
+}
+.subject-input::placeholder { color: #333; }
+
+/* ── Split layout ── */
+.editor-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .editor-split { grid-template-columns: 1fr; }
+}
+
+/* ── Editor panel ── */
+.editor-panel-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; border-bottom: 1px solid #1a1a1a;
+  font-size: 13.5px; font-weight: 700; color: #555;
+}
+.editor-panel-header i { color: var(--accent); }
+
+.html-editor {
+  width: 100%; box-sizing: border-box;
+  background: #0d0d0d; border: none; outline: none; resize: none;
+  color: #b0d080; font-family: 'Courier New', monospace; font-size: 13px;
+  line-height: 1.6; padding: 16px;
+  min-height: 540px;
+  border-radius: 0 0 14px 14px;
+}
+
+/* ── Preview panel ── */
+.preview-panel {
+  background: #f4f4f4; border-radius: 14px; overflow: hidden;
+  border: 1px solid #1e1e1e;
+}
+.preview-iframe {
+  width: 100%; min-height: 580px; border: none; display: block;
+}
+
+/* ── Save indicator ── */
+.save-status {
+  font-size: 13px; color: #444; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  transition: color .3s;
+}
+.save-status.saved { color: var(--accent); }
+.save-status.saving { color: #888; }
+.save-status.unsaved { color: #f59e0b; }
+
+/* ── Unsaved dot ── */
+.unsaved-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #f59e0b; flex-shrink: 0;
+  opacity: 0; transition: opacity .2s;
+}
+.unsaved-dot.visible { opacity: 1; }
+
+/* Meta chips */
+.meta-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header anim-up">
+  <h1><i class="fas fa-eye"></i> Newsletter Preview</h1>
+  <p class="subtitle">Edit, preview, and save your newsletter</p>
+</div>
+
+<div class="color-bar"></div>
+
+<!-- Toolbar -->
+<div class="preview-toolbar anim-up d1">
+  <a href="/emailnewsgen/" class="back-btn">
+    <i class="fas fa-arrow-left"></i> All Newsletters
+  </a>
+  <div class="spacer"></div>
+  <div class="save-status" id="saveStatus">
+    <div class="unsaved-dot" id="unsavedDot"></div>
+    <span id="saveStatusText">Saved</span>
+  </div>
+  <button class="btn btn-ghost btn-sm" onclick="copyHtml()">
+    <i class="fas fa-copy"></i> Copy HTML
+  </button>
+  <a href="/emailnewsgen/{{ nl.id }}/download" class="btn btn-ghost btn-sm">
+    <i class="fas fa-download"></i> Download
+  </a>
+  <button class="btn btn-success btn-sm" id="saveBtn" onclick="saveNewsletter()">
+    <i class="fas fa-floppy-disk"></i> Save
+  </button>
+</div>
+
+<!-- Subject editor -->
+<div class="subject-editor-wrap anim-up d2">
+  <span class="subject-label"><i class="fas fa-envelope" style="color:var(--accent);margin-right:5px;"></i>Subject</span>
+  <input class="subject-input" id="subjectInput" value="{{ nl.subject }}"
+    placeholder="Email subject line…" oninput="markUnsaved()">
+</div>
+
+<!-- Meta chips -->
+<div class="meta-chips anim-up d2">
+  {% if nl.tone %}
+  <span class="chip chip-green"><i class="fas fa-sliders"></i> {{ nl.tone }}</span>
+  {% endif %}
+  {% if nl.audience %}
+  <span class="chip chip-blue"><i class="fas fa-users"></i> {{ nl.audience }}</span>
+  {% endif %}
+  <span class="chip" style="background:#1a1a1a;color:#555;border:1px solid #222;">
+    <i class="fas fa-clock" style="color:#333;"></i>
+    {{ nl.created_at.strftime('%b %d, %Y') }}
+  </span>
+</div>
+
+<!-- Editor + Preview split -->
+<div class="editor-split anim-up d3">
+
+  <!-- HTML Editor -->
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="editor-panel-header">
+      <i class="fas fa-code"></i> HTML Editor
+      <span style="margin-left:auto;font-size:12px;color:#333;font-weight:600;">Edit the HTML directly</span>
+    </div>
+    <textarea class="html-editor" id="htmlEditor"
+      oninput="onEditorChange()" spellcheck="false">{{ nl.content_html }}</textarea>
+  </div>
+
+  <!-- Live Preview -->
+  <div class="preview-panel">
+    <div class="editor-panel-header" style="background:#1a1a1a;">
+      <i class="fas fa-eye"></i> Live Preview
+      <span style="margin-left:auto;font-size:12px;color:#333;font-weight:600;">Updates as you type</span>
+    </div>
+    <iframe class="preview-iframe" id="previewFrame"
+      srcdoc="{{ nl.content_html | e }}" sandbox="allow-same-origin"></iframe>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const NL_ID = {{ nl.id }};
+let _unsaved = false;
+let _previewTimer = null;
+
+function markUnsaved() {
+  if (_unsaved) return;
+  _unsaved = true;
+  document.getElementById('unsavedDot').classList.add('visible');
+  const st = document.getElementById('saveStatus');
+  st.classList.remove('saved', 'saving');
+  st.classList.add('unsaved');
+  document.getElementById('saveStatusText').textContent = 'Unsaved changes';
+}
+
+function onEditorChange() {
+  markUnsaved();
+  // Debounce live preview update
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(updatePreview, 400);
+}
+
+function updatePreview() {
+  const html = document.getElementById('htmlEditor').value;
+  const frame = document.getElementById('previewFrame');
+  frame.srcdoc = html;
+}
+
+async function saveNewsletter() {
+  const subject = document.getElementById('subjectInput').value.trim();
+  const content_html = document.getElementById('htmlEditor').value.trim();
+
+  if (!content_html) { showMsg('HTML cannot be empty.', 'warn'); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  const st = document.getElementById('saveStatus');
+  st.classList.remove('saved', 'unsaved');
+  st.classList.add('saving');
+  document.getElementById('saveStatusText').textContent = 'Saving…';
+
+  try {
+    const r = await fetch(`/emailnewsgen/${NL_ID}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subject, content_html }),
+    });
+    const d = await r.json();
+    if (d.success) {
+      _unsaved = false;
+      document.getElementById('unsavedDot').classList.remove('visible');
+      st.classList.remove('saving', 'unsaved');
+      st.classList.add('saved');
+      document.getElementById('saveStatusText').textContent = 'Saved';
+      showMsg('Newsletter saved!', 'success');
+    } else {
+      st.classList.remove('saving');
+      st.classList.add('unsaved');
+      document.getElementById('saveStatusText').textContent = 'Save failed';
+      showMsg(d.error || 'Save failed.', 'error');
+    }
+  } catch (e) {
+    st.classList.remove('saving');
+    st.classList.add('unsaved');
+    document.getElementById('saveStatusText').textContent = 'Save failed';
+    showMsg('Network error. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function copyHtml() {
+  const html = document.getElementById('htmlEditor').value;
+  if (!html) { showMsg('Nothing to copy.', 'warn'); return; }
+  navigator.clipboard.writeText(html).then(() => showMsg('HTML copied!', 'success'));
+}
+
+// Warn before leaving with unsaved changes
+window.addEventListener('beforeunload', e => {
+  if (_unsaved) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
+// Ctrl/Cmd+S to save
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveNewsletter();
+  }
+});
+</script>
+{% endblock %}

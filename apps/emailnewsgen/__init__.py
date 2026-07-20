@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, Response
+from flask import Blueprint, render_template, request, jsonify, Response, redirect, url_for
 from models import db, Setting, Newsletter
 import json
 import re
@@ -184,6 +184,26 @@ def generate():
         return jsonify({"error": "AI returned an invalid response after several attempts. Please try again."}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@emailnewsgen_bp.route("/<int:nl_id>/preview")
+def preview(nl_id):
+    nl = Newsletter.query.get_or_404(nl_id)
+    return render_template("emailnewsgen/preview.html", nl=nl)
+
+
+@emailnewsgen_bp.route("/<int:nl_id>/save", methods=["POST"])
+def save(nl_id):
+    nl = Newsletter.query.get_or_404(nl_id)
+    data = request.get_json()
+    subject = (data.get("subject") or "").strip()
+    content_html = (data.get("content_html") or "").strip()
+    if subject:
+        nl.subject = subject
+    if content_html:
+        nl.content_html = content_html
+    db.session.commit()
+    return jsonify({"success": True, "subject": nl.subject})
 
 
 @emailnewsgen_bp.route("/<int:nl_id>/download")
