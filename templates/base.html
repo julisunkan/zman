@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AI Tools{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/mobile.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    :root {
+      --accent:      {% block accent %}#7c3aed{% endblock %};
+      --accent-dark: {% block accent_dark %}#5b21b6{% endblock %};
+    }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Page content ── -->
+<div class="page-wrap">
+
+  <div id="inlineMsg">
+    <i id="inlineMsgIcon" class="fas fa-circle-check"></i>
+    <span id="inlineMsgText"></span>
+    <button class="msg-close" onclick="hideMsg()">✕</button>
+  </div>
+
+  {% block content %}{% endblock %}
+
+</div>
+
+<script>
+let _msgTimer = null;
+const _ICONS = { success:'fa-circle-check', error:'fa-circle-xmark', warn:'fa-triangle-exclamation', info:'fa-circle-info' };
+function showMsg(text, type='info', autoDismiss=true) {
+  const el = document.getElementById('inlineMsg');
+  document.getElementById('inlineMsgIcon').className = 'fas ' + (_ICONS[type] || 'fa-circle-info');
+  document.getElementById('inlineMsgText').textContent = text;
+  el.className = 'show ' + type;
+  clearTimeout(_msgTimer);
+  if (autoDismiss && type !== 'error') _msgTimer = setTimeout(hideMsg, 5000);
+}
+function hideMsg() {
+  document.getElementById('inlineMsg').className = '';
+  clearTimeout(_msgTimer);
+}
+
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

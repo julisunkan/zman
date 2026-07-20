@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }}{% endblock %}
+{% block navbar_brand %}<span class="navbar-brand"><i class="fas fa-graduation-cap"></i> Course Generator</span>{% endblock %}
+{% block accent %}#6366f1{% endblock %}
+{% block accent_dark %}#4f46e5{% endblock %}
+
+{% block head %}
+<style>
+/* ── Export dropdown ── */
+.export-wrap { position: relative; display: inline-block; }
+.export-menu {
+  display: none;
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 500;
+  background: rgba(18,12,34,.97); border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+  min-width: 170px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0,0,0,.7);
+}
+.export-menu.show { display: block; }
+.export-menu a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; font-size: 15px; font-weight: 600;
+  color: #c8b8e8; text-decoration: none;
+  transition: background .15s, color .15s;
+}
+.export-menu a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.export-menu .divider { border-top: 1px solid rgba(255,255,255,.08); margin: 4px 0; }
+.export-menu .label {
+  font-size: 12.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .07em; color: #6a5a8a; padding: 8px 14px 4px;
+}
+
+/* ── Module card ── */
+.module-export-row {
+  display: flex; align-items: center; gap: 6px; margin-top: 12px; flex-wrap: wrap;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .course-grid { grid-template-columns: 1fr !important; }
+  .mod-side    { display: none; }
+  .mod-tabs    { display: flex !important; }
+}
+@media (max-width: 820px) {
+  .mod-inner-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Dropdown stacking ── */
+.export-wrap { position: relative; }
+.export-wrap:has(.export-menu.show) { z-index: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page header -->
+<div class="page-header">
+  <a href="/coursegen/" class="back-link"><i class="fas fa-arrow-left"></i> Back to Courses</a>
+  <div class="page-header-row">
+    <div>
+      <h1><i class="fas fa-graduation-cap"></i> {{ course.title }}</h1>
+      <p class="subtitle" style="margin-top:6px;">
+        <span class="badge badge-accent" style="margin-right:8px;">{{ course.difficulty }}</span>
+        {{ course.total_modules }} Modules &middot; {{ course.language }} &middot;
+        {{ course.created_at.strftime('%B %d, %Y') }}
+      </p>
+    </div>
+    <!-- Course-level actions -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px;">
+      <div class="export-wrap" id="courseExportWrap">
+        <button class="btn btn-ghost-accent btn-sm" onclick="toggleMenu('courseExportMenu')">
+          <i class="fas fa-download"></i> Export Course <i class="fas fa-chevron-down" style="font-size:10px;"></i>
+        </button>
+        <div class="export-menu" id="courseExportMenu">
+          <div class="label">Full Course</div>
+          <a href="/coursegen/{{ course.id }}/export/pdf">
+            <i class="fas fa-file-pdf" style="color:#f87171;"></i> Download PDF
+          </a>
+          <a href="/coursegen/{{ course.id }}/export/docx">
+            <i class="fas fa-file-word" style="color:#60a5fa;"></i> Download DOCX
+          </a>
+        </div>
+      </div>
+      <button class="btn btn-danger btn-sm" id="deleteBtn" onclick="showDeleteConfirm()">
+        <i class="fas fa-trash"></i> Delete
+      </button>
+      <div id="deleteConfirm" style="display:none;align-items:center;gap:8px;background:#1a0a0a;border:1px solid #7f1d1d;border-radius:10px;padding:8px 12px;">
+        <span style="font-size:15px;color:#fca5a5;">Delete this course?</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteCourse()"><i class="fas fa-check"></i> Yes, delete</button>
+        <button class="btn btn-ghost btn-sm" onclick="hideDeleteConfirm()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile: tab-based module selector (hidden on desktop) -->
+<div class="mod-tabs" style="display:none;overflow-x:auto;gap:6px;margin-bottom:16px;" id="modTabsBar">
+  {% for mod in course.modules %}
+  <button class="btn btn-sm btn-ghost {% if loop.first %}btn-ghost-accent{% endif %}"
+          style="flex-shrink:0;"
+          id="tab-{{ mod.number }}"
+          onclick="switchMod('mod-{{ mod.number }}', {{ mod.number }})">
+    {{ mod.number }}. {{ mod.title | truncate(20, True, '…') }}
+  </button>
+  {% endfor %}
+</div>
+
+<!-- Course layout: sidebar + content -->
+<div class="course-grid" style="display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;">
+
+  <!-- Sidebar -->
+  <div class="sticky-col mod-side">
+    <div class="card" style="padding:12px;">
+      <p class="section-label" style="padding:0 6px;margin-bottom:10px;">
+        Modules <span class="badge badge-gray" style="margin-left:4px;">{{ course.total_modules }}</span>
+      </p>
+      <div class="mod-nav" id="modNav">
+        {% for mod in course.modules %}
+        <button class="mod-nav-item {% if loop.first %}active{% endif %}"
+                onclick="switchMod('mod-{{ mod.number }}', {{ mod.number }})">
+          <span class="mod-nav-num">{{ mod.number }}</span>
+          <span style="flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ mod.title }}
+          </span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div>
+    {% for mod in course.modules %}
+    <div class="mod-panel" id="mod-{{ mod.number }}"
+         style="{% if not loop.first %}display:none;{% endif %}">
+
+      <!-- Module header row -->
+      <div class="card" style="padding:14px 18px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent);margin-bottom:3px;">
+              Module {{ mod.number }}
+            </div>
+            <div style="font-size:19px;font-weight:800;color:#f0f0f0;">{{ mod.title }}</div>
+          </div>
+          <!-- Per-module export -->
+          <div class="export-wrap" id="modExportWrap-{{ mod.id }}">
+            <button class="btn btn-sm btn-ghost" onclick="toggleMenu('modExportMenu-{{ mod.id }}')">
+              <i class="fas fa-download"></i> Export <i class="fas fa-chevron-down" style="font-size:10px;"></i>
+            </button>
+            <div class="export-menu" id="modExportMenu-{{ mod.id }}">
+              <div class="label">This Module</div>
+              <a href="/coursegen/{{ course.id }}/module/{{ mod.id }}/export/pdf">
+                <i class="fas fa-file-pdf" style="color:#f87171;"></i> Download PDF
+              </a>
+              <a href="/coursegen/{{ course.id }}/module/{{ mod.id }}/export/docx">
+                <i class="fas fa-file-word" style="color:#60a5fa;"></i> Download DOCX
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content + quiz/assignment -->
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;" class="mod-inner-grid">
+
+        <!-- Content -->
+        <div class="card">
+          <div class="module-content" data-raw="{{ mod.content | e }}"></div>
+        </div>
+
+        <!-- Quiz + assignment -->
+        <div>
+          {% if mod.quizzes %}
+          <div class="card">
+            <p class="section-label" style="margin-top:0;">
+              <i class="fas fa-circle-question"></i> Quiz
+              <span class="badge badge-gray" style="margin-left:6px;">{{ mod.quizzes | length }} Q</span>
+            </p>
+
+            {% for q in mod.quizzes %}
+            <div style="margin-bottom:16px;" data-qblock="{{ q.id }}">
+              <p class="text-sm text-white text-bold" style="margin-bottom:9px;line-height:1.5;">
+                {{ loop.index }}. {{ q.question }}
+              </p>
+              {% for opt in q.options | from_json %}
+              <button class="quiz-option"
+                      data-qid="{{ q.id }}"
+                      data-opt="{{ loop.index0 }}"
+                      data-correct="{{ 'true' if loop.index0 == q.correct_answer else 'false' }}"
+                      onclick="selectOpt(this, {{ q.id }})">
+                <span class="quiz-letter">{{ ['A','B','C','D','E','F','G','H'][loop.index0] }}</span>
+                {{ opt }}
+              </button>
+              {% endfor %}
+            </div>
+            {% endfor %}
+
+            <button class="btn btn-ghost-accent btn-sm w-full" id="check-{{ mod.id }}"
+                    onclick="checkQuiz('{{ mod.id }}', {{ mod.quizzes | length }})">
+              <i class="fas fa-check-circle"></i> Check Answers
+            </button>
+
+            <div id="score-{{ mod.id }}" class="hidden" style="margin-top:14px;">
+              <div class="flex items-center justify-between" style="margin-bottom:8px;">
+                <span class="text-sm text-bold text-white" id="score-txt-{{ mod.id }}"></span>
+                <span class="badge" id="score-badge-{{ mod.id }}"></span>
+              </div>
+              <div class="score-bar-wrap">
+                <div class="score-bar-fill" id="score-bar-{{ mod.id }}" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if mod.assignments %}
+          {% set asgn = mod.assignments[0] %}
+          <div class="card card-accent">
+            <p class="section-label" style="margin-top:0;"><i class="fas fa-file-pen"></i> Assignment</p>
+            <p class="text-sm text-white text-bold" style="margin-bottom:8px;">{{ asgn.title }}</p>
+            <p class="text-sm text-muted" style="line-height:1.65;">{{ asgn.description }}</p>
+          </div>
+          {% endif %}
+        </div>
+
+      </div><!-- /inner grid -->
+    </div><!-- /mod-panel -->
+    {% endfor %}
+  </div><!-- /main -->
+
+</div><!-- /course-grid -->
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Export menus ───────────────────────────────────────────────────────────────
+function toggleMenu(id) {
+  const menu = document.getElementById(id);
+  const isOpen = menu.classList.contains('show');
+  document.querySelectorAll('.export-menu').forEach(m => m.classList.remove('show'));
+  if (!isOpen) menu.classList.add('show');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.export-wrap')) {
+    document.querySelectorAll('.export-menu').forEach(m => m.classList.remove('show'));
+  }
+});
+
+// ── Module switching ───────────────────────────────────────────────────────────
+function switchMod(panelId, num) {
+  document.querySelectorAll('.mod-panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.mod-nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(b => {
+    b.classList.remove('btn-ghost-accent');
+    b.classList.add('btn-ghost');
+  });
+  const panel = document.getElementById(panelId);
+  if (panel) panel.style.display = '';
+  const navItem = document.querySelector(`.mod-nav-item:nth-child(${num})`);
+  // find by iteration since numbers may not be contiguous
+  document.querySelectorAll('.mod-nav-item').forEach(b => {
+    if (b.querySelector('.mod-nav-num')?.textContent == num) b.classList.add('active');
+  });
+  const tab = document.getElementById('tab-' + num);
+  if (tab) { tab.classList.add('btn-ghost-accent'); tab.classList.remove('btn-ghost'); }
+}
+
+// ── Responsive: mod-inner-grid ─────────────────────────────────────────────────
+function applyResponsive() {
+  const W = window.innerWidth;
+  document.querySelectorAll('.mod-inner-grid').forEach(g => {
+    g.style.gridTemplateColumns = W < 820 ? '1fr' : '1fr 340px';
+  });
+}
+window.addEventListener('resize', applyResponsive);
+applyResponsive();
+
+// ── Markdown renderer ──────────────────────────────────────────────────────────
+function renderMd(text) {
+  return text
+    .replace(/```[\w]*\n?([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`\n]+)`/g,              '<code>$1</code>')
+    .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+    .replace(/^### (.+)$/gm,  '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,   '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,    '<h2>$1</h2>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,    '<em>$1</em>')
+    .replace(/^[\-\*\+] (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>\n?)+/g, m => '<ul>' + m + '</ul>')
+    .replace(/\n\n+/g, '\n')
+    .replace(/^(?!<[huplo])(.+)$/gm, '<p>$1</p>');
+}
+document.querySelectorAll('.module-content').forEach(el => {
+  el.innerHTML = renderMd(el.dataset.raw || '');
+});
+
+// ── Quiz ───────────────────────────────────────────────────────────────────────
+const _sel = {};
+function selectOpt(btn, qid) {
+  document.querySelectorAll(`.quiz-option[data-qid="${qid}"]`).forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  _sel[qid] = btn.dataset.opt;
+}
+
+function checkQuiz(modId, total) {
+  const blocks = Array.from(document.querySelectorAll('[data-qblock]')).filter(b => {
+    const panel = b.closest('.mod-panel');
+    return panel && panel.style.display !== 'none';
+  });
+
+  let correct = 0;
+  blocks.forEach(block => {
+    const qid     = block.dataset.qblock;
+    const opts    = block.querySelectorAll('.quiz-option');
+    const userSel = _sel[qid];
+    opts.forEach(opt => {
+      opt.disabled = true;
+      if (opt.dataset.correct === 'true') opt.classList.add('correct');
+      else if (opt.dataset.opt === userSel) opt.classList.add('wrong');
+    });
+    if (userSel !== undefined) {
+      const selBtn = block.querySelector(`.quiz-option[data-opt="${userSel}"]`);
+      if (selBtn && selBtn.dataset.correct === 'true') correct++;
+    }
+  });
+
+  const tot = blocks.length;
+  const pct = tot ? Math.round(correct / tot * 100) : 0;
+
+  document.getElementById('score-txt-' + modId).textContent = `${correct} / ${tot} correct`;
+  document.getElementById('score-bar-' + modId).style.width = pct + '%';
+  const badge = document.getElementById('score-badge-' + modId);
+  badge.textContent = pct >= 70 ? '🎉 Passed!' : 'Keep practising';
+  badge.className   = 'badge ' + (pct >= 70 ? 'badge-green' : 'badge-yellow');
+  document.getElementById('score-' + modId).classList.remove('hidden');
+  document.getElementById('check-' + modId).style.display = 'none';
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────────
+function showDeleteConfirm() {
+  document.getElementById('deleteBtn').style.display = 'none';
+  document.getElementById('deleteConfirm').style.display = 'flex';
+}
+function hideDeleteConfirm() {
+  document.getElementById('deleteConfirm').style.display = 'none';
+  document.getElementById('deleteBtn').style.display = '';
+}
+async function deleteCourse() {
+  const r = await fetch('/coursegen/{{ course.id }}/delete', { method: 'POST' });
+  const d = await r.json();
+  if (d.success) window.location = '/coursegen/';
+  else { hideDeleteConfirm(); showMsg(d.error || 'Delete failed.', 'error'); }
+}
+</script>
+{% endblock %}

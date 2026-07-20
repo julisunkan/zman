@@ -1,0 +1,27 @@
+AI Activity Book Generator
+==========================
+
+DESCRIPTION
+-----------
+An AI-powered activity book creator that generates complete, themed puzzle and trivia books for kids and learners of all ages. Choose a theme (Space, Animals, History, Ocean…), difficulty level, and age group, and the tool instantly assembles four distinct activities — a word search, a Sudoku puzzle, a crossword with clues, and a trivia quiz — all woven around your chosen topic. Download the finished book as an interactive HTML file or play it directly in the browser.
+
+FEATURES
+--------
+- Theme-based activity book generation (any topic)
+- Difficulty levels: Easy, Medium, Hard
+- Age groups: Kids 6–8, Kids 9–12, Teens, Adults
+- Word search puzzle with hidden theme-related words
+- Sudoku puzzle (9×9 grid with appropriate difficulty)
+- Crossword puzzle with across/down clues
+- Trivia quiz with multiple-choice questions
+- Interactive in-browser play for all four activities
+- Word search click-to-reveal word highlighting
+- Crossword interactive grid with clue highlighting
+- Trivia answer reveal per question
+- Downloadable interactive HTML activity book
+- Auto-saved book history (up to 20 recent books)
+- Color-coded activity tabs (Word Search, Sudoku, Crossword, Trivia)
+
+KEYWORDS
+--------
+AI activity book, puzzle generator, word search maker, crossword generator, Sudoku creator, trivia quiz generator, kids activity book, educational puzzle, themed puzzle book, AI puzzle creator, children's learning tool, printable activity sheet, interactive activity book, educational game generator, homeschool resource, classroom activity maker, AI kids content, puzzle book download, learning through play, AI trivia generator

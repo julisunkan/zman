@@ -1,0 +1,26 @@
+AI Course Generator
+===================
+
+DESCRIPTION
+-----------
+An AI-powered course creation tool that instantly builds complete, structured online courses from a single topic. Powered by Groq AI, it generates rich module content with headings, bullet points, and code examples, multiple-choice quizzes with graded answers, and practical assignments — all ready to export as a polished PDF or DOCX document.
+
+FEATURES
+--------
+- Instant course outline generation from any topic
+- Configurable number of modules (2–50)
+- Difficulty levels: Beginner, Intermediate, Advanced
+- Multi-language course generation
+- Adjustable words-per-module (100–1500)
+- Multiple-choice quizzes per module (1–15 questions each)
+- Practical assignments with detailed instructions
+- Real-time streaming progress during generation
+- Export full course or individual modules as PDF
+- Export full course or individual modules as DOCX
+- Auto-saved course history (up to 20 recent courses)
+- In-browser module reader with quiz scoring
+- Color-coded difficulty badges
+
+KEYWORDS
+--------
+AI course creator, course generator, e-learning builder, online course maker, AI tutor, quiz generator, module builder, PDF course export, DOCX export, Groq AI, LLM education, automated curriculum, course outline generator, self-paced learning, educational content generator, AI lesson plan, training material creator, knowledge base builder, instant course, study guide generator

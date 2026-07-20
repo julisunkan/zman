@@ -1,0 +1,593 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel{% endblock %}
+{% block navbar_brand %}<span class="navbar-brand"><i class="fas fa-shield-halved"></i> Admin Panel</span>{% endblock %}
+{% block nav_admin %}active{% endblock %}
+{% block accent %}#ef4444{% endblock %}
+{% block accent_dark %}#dc2626{% endblock %}
+
+{% block head %}
+<style>
+/* ── Stat cards ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 30px;
+}
+@media (max-width: 800px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 400px) { .stat-grid { grid-template-columns: 1fr 1fr; } }
+
+.stat-card {
+  background: #111; border: 1px solid #1d1d1d;
+  border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: transform .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
+  cursor: default;
+}
+.stat-card::before {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--sc-color, var(--accent));
+  opacity: .7;
+}
+.stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,.45); }
+.stat-card .stat-icon {
+  width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 17px;
+  margin-bottom: 4px;
+}
+.stat-card .stat-num   { font-size: 34px; font-weight: 900; color: #f0f0f0; letter-spacing: -.5px; }
+.stat-card .stat-label { font-size: 13px; color: #3e3e3e; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── Setting row ── */
+.setting-row {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  gap: 10px; align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid #161616;
+  transition: background .15s;
+}
+.setting-row:last-child { border-bottom: none; }
+@media (max-width: 640px) { .setting-row { grid-template-columns: 1fr; gap: 8px; } }
+.setting-key {
+  font-size: 14.5px; font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: #888; letter-spacing: .02em; padding-top: 2px;
+}
+.setting-key .key-badge {
+  display: inline-block;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent); border-radius: 5px;
+  padding: 2px 8px; font-size: 13px;
+}
+.setting-val-wrap { position: relative; display: flex; gap: 6px; align-items: center; }
+.setting-val-wrap .input { font-family: 'Courier New', monospace; font-size: 15px; padding-right: 40px; }
+.toggle-vis {
+  position: absolute; right: 10px;
+  background: none; border: none; cursor: pointer;
+  color: #444; font-size: 15px; transition: color .15s;
+}
+.toggle-vis:hover { color: #aaa; }
+.setting-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ── Add setting form ── */
+.add-setting-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px; align-items: end;
+  margin-top: 16px; padding-top: 16px;
+  border-top: 1px solid #161616;
+}
+@media (max-width: 640px) { .add-setting-form { grid-template-columns: 1fr; } }
+
+/* ── Data table ── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em;
+  color: #3a3a3a; text-align: left; padding: 0 12px 10px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.data-table td {
+  padding: 12px 12px; font-size: 15px; color: #888;
+  border-bottom: 1px solid #141414; vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,.04); }
+.data-table td.td-title { color: #ccc; font-weight: 600; max-width: 260px; }
+.td-title span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Delete confirm overlay ── */
+.confirm-overlay {
+  display: none;
+  position: fixed; inset: 0; z-index: 999;
+  background: rgba(0,0,0,.75);
+  align-items: center; justify-content: center;
+  padding: 20px; animation: fadeIn .2s ease;
+}
+.confirm-overlay.show { display: flex; }
+.confirm-box {
+  background: #111; border: 1px solid #2a2a2a;
+  border-radius: 18px; padding: 30px;
+  max-width: 400px; width: 100%;
+  box-shadow: 0 28px 72px rgba(0,0,0,.85);
+  animation: scaleIn .2s ease both;
+}
+.confirm-box h3 { font-size: 20px; font-weight: 800; color: #f0f0f0; margin-bottom: 10px; }
+.confirm-box p  { font-size: 15.5px; color: #555; line-height: 1.65; margin-bottom: 22px; }
+.confirm-actions { display: flex; gap: 10px; }
+
+/* ── Tab color coding ── */
+.tab-btn[data-tab="courses"]:hover   { color: var(--blue); }
+.tab-btn[data-tab="newsletters"]:hover { color: var(--green); }
+.tab-btn[data-tab="books"]:hover     { color: var(--yellow); }
+.tab-btn[data-tab="settings"].active { color: var(--red); border-bottom-color: var(--red); }
+.tab-btn[data-tab="courses"].active  { color: var(--blue); border-bottom-color: var(--blue); }
+.tab-btn[data-tab="newsletters"].active { color: var(--green); border-bottom-color: var(--green); }
+.tab-btn[data-tab="books"].active    { color: var(--yellow); border-bottom-color: var(--yellow); }
+
+/* ── Admin page header ── */
+.admin-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 28px;
+}
+.admin-header-left h1 { font-size: clamp(22px, 4vw, 30px); font-weight: 900; color: #f0f0f0; display: flex; align-items: center; gap: 12px; }
+.admin-header-left h1 i { color: var(--red); }
+.admin-header-left p { color: #3e3e3e; font-size: 15.5px; margin-top: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="admin-header anim-up">
+  <div class="admin-header-left">
+    <h1><i class="fas fa-shield-halved"></i> Admin Panel</h1>
+    <p>Manage settings, API keys, and all generated data</p>
+  </div>
+  <form method="POST" action="/admin/logout" style="padding-top:28px;">
+    <button class="btn btn-ghost btn-sm" type="submit">
+      <i class="fas fa-arrow-right-from-bracket"></i> Sign Out
+    </button>
+  </form>
+</div>
+
+<div class="color-bar"></div>
+
+<!-- ── Stats ── -->
+<div class="stat-grid anim-up">
+  <div class="stat-card" style="--sc-color:var(--blue);">
+    <div class="stat-icon" style="background:rgba(59,130,246,.14);color:#3b82f6;"><i class="fas fa-graduation-cap"></i></div>
+    <div class="stat-num">{{ stats.courses }}</div>
+    <div class="stat-label">Courses</div>
+  </div>
+  <div class="stat-card" style="--sc-color:var(--green);">
+    <div class="stat-icon" style="background:rgba(34,197,94,.14);color:#22c55e;"><i class="fas fa-envelope-open-text"></i></div>
+    <div class="stat-num">{{ stats.newsletters }}</div>
+    <div class="stat-label">Newsletters</div>
+  </div>
+  <div class="stat-card" style="--sc-color:var(--yellow);">
+    <div class="stat-icon" style="background:rgba(245,158,11,.14);color:#f59e0b;"><i class="fas fa-puzzle-piece"></i></div>
+    <div class="stat-num">{{ stats.books }}</div>
+    <div class="stat-label">Activity Books</div>
+  </div>
+  <div class="stat-card" style="--sc-color:var(--red);">
+    <div class="stat-icon" style="background:rgba(239,68,68,.14);color:#ef4444;"><i class="fas fa-sliders"></i></div>
+    <div class="stat-num">{{ stats.settings }}</div>
+    <div class="stat-label">Settings</div>
+  </div>
+</div>
+
+<!-- ── Tabs ── -->
+<div class="tabs anim-up d2">
+  <button class="tab-btn active" data-tab="settings" onclick="switchTab('settings', this)">
+    <i class="fas fa-sliders"></i> Settings &amp; API Keys
+  </button>
+  <button class="tab-btn" data-tab="courses" onclick="switchTab('courses', this)">
+    <i class="fas fa-graduation-cap"></i> Courses
+    {% if courses %}<span class="badge badge-blue" style="margin-left:4px;">{{ courses|length }}</span>{% endif %}
+  </button>
+  <button class="tab-btn" data-tab="newsletters" onclick="switchTab('newsletters', this)">
+    <i class="fas fa-envelope-open-text"></i> Newsletters
+    {% if newsletters %}<span class="badge badge-green" style="margin-left:4px;">{{ newsletters|length }}</span>{% endif %}
+  </button>
+  <button class="tab-btn" data-tab="books" onclick="switchTab('books', this)">
+    <i class="fas fa-puzzle-piece"></i> Activity Books
+    {% if books %}<span class="badge badge-yellow" style="margin-left:4px;">{{ books|length }}</span>{% endif %}
+  </button>
+</div>
+
+<!-- ════════════════════ SETTINGS TAB ════════════════════ -->
+<div class="tab-panel active" id="tab-settings">
+
+  <div class="card anim-up">
+    <div class="flex items-center justify-between" style="margin-bottom:18px;">
+      <div>
+        <p class="section-label" style="margin:0;">Configuration Keys</p>
+        <p style="font-size:14px;color:#2e2e2e;margin-top:4px;">Changes save instantly on click</p>
+      </div>
+      <span class="badge badge-red"><i class="fas fa-lock" style="margin-right:4px;"></i>Secure</span>
+    </div>
+
+    {% set visible_settings = settings | selectattr('key', '!=', 'ADMIN_PASSWORD') | list %}
+    {% if visible_settings %}
+      <div id="settingsList">
+        {% for s in visible_settings %}
+        <div class="setting-row" id="srow-{{ s.id }}">
+          <div class="setting-key">
+            {% if 'KEY' in s.key or 'SECRET' in s.key or 'TOKEN' in s.key %}
+              <span class="key-badge"><i class="fas fa-key" style="font-size:9px;margin-right:4px;"></i>{{ s.key }}</span>
+            {% else %}
+              {{ s.key }}
+            {% endif %}
+          </div>
+          <div class="setting-val-wrap">
+            {% set is_secret = 'KEY' in s.key or 'SECRET' in s.key or 'TOKEN' in s.key %}
+            <input class="input" id="sval-{{ s.id }}"
+              type="{{ 'password' if is_secret else 'text' }}"
+              value="{{ s.value }}" placeholder="(empty)"
+              data-key="{{ s.key }}" data-secret="{{ 'true' if is_secret else 'false' }}"
+              onkeydown="if(event.key==='Enter') saveSetting({{ s.id }})">
+            {% if is_secret %}
+            <button class="toggle-vis" onclick="toggleVis({{ s.id }})" title="Show / hide">
+              <i class="fas fa-eye" id="vis-icon-{{ s.id }}"></i>
+            </button>
+            {% endif %}
+          </div>
+          <div class="setting-actions">
+            <button class="btn btn-sm btn-ghost-accent" onclick="saveSetting({{ s.id }})">
+              <i class="fas fa-check"></i> Save
+            </button>
+            <button class="btn btn-sm btn-danger btn-icon" onclick="confirmDeleteSetting({{ s.id }}, '{{ s.key }}')" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state" style="padding:32px 0;">
+        <div class="icon"><i class="fas fa-sliders"></i></div>
+        <p>No settings yet. Add one below.</p>
+      </div>
+    {% endif %}
+
+    <!-- Add new setting -->
+    <div class="add-setting-form">
+      <div class="form-group mb-0">
+        <label class="form-label">Key</label>
+        <input class="input" id="newKey" placeholder="e.g. GROQ_API_KEY" style="font-family:monospace;">
+      </div>
+      <div class="form-group mb-0">
+        <label class="form-label">Value</label>
+        <input class="input" id="newVal" placeholder="Enter value…" type="password"
+               onfocus="this.type='text'" onblur="if(!this.value)this.type='password'">
+      </div>
+      <button class="btn btn-primary" style="width:auto;white-space:nowrap;" onclick="addSetting()">
+        <i class="fas fa-plus"></i> Add
+      </button>
+    </div>
+  </div>
+
+  <!-- Security: Admin password -->
+  <div class="card" style="margin-top:0;">
+    <div class="flex items-center justify-between" style="margin-bottom:16px;">
+      <p class="section-label" style="margin:0;">Admin Password</p>
+      {% if settings | selectattr('key', '==', 'ADMIN_PASSWORD') | list %}
+        <span class="badge badge-green"><i class="fas fa-lock" style="margin-right:4px;"></i>Password set</span>
+      {% else %}
+        <span class="badge badge-yellow"><i class="fas fa-lock-open" style="margin-right:4px;"></i>No password</span>
+      {% endif %}
+    </div>
+    <p style="font-size:15px;color:#3e3e3e;margin-bottom:16px;line-height:1.6;">
+      {% if settings | selectattr('key', '==', 'ADMIN_PASSWORD') | list %}
+        Visitors must log in to access this panel.
+      {% else %}
+        The panel is currently open to anyone. Set a password to protect it.
+      {% endif %}
+    </p>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;">
+      <div class="form-group mb-0">
+        <label class="form-label">New Password</label>
+        <input class="input" type="password" id="adminPwInput" placeholder="Enter new admin password"
+               onkeydown="if(event.key==='Enter') setAdminPassword()">
+      </div>
+      <button class="btn btn-ghost-accent" style="white-space:nowrap;" onclick="setAdminPassword()">
+        <i class="fas fa-key"></i> Set Password
+      </button>
+    </div>
+  </div>
+
+  <!-- Groq help card -->
+  <div class="card-flat" style="display:flex;gap:14px;align-items:flex-start;">
+    <div class="feat-icon feat-icon-red" style="flex-shrink:0;margin-top:2px;"><i class="fas fa-circle-info"></i></div>
+    <div>
+      <div style="font-size:15px;font-weight:800;color:#ccc;margin-bottom:6px;">Getting a Groq API Key</div>
+      <div style="font-size:15px;color:#484848;line-height:1.7;">
+        Get your free key at <a href="https://console.groq.com" target="_blank" style="color:var(--red);">console.groq.com</a>.
+        Add it as <code style="background:#161616;padding:2px 8px;border-radius:6px;font-size:14px;color:var(--red);">GROQ_API_KEY</code> above to enable all AI generation features.
+        The key is stored in the local database and never shared anywhere except Groq's API.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ COURSES TAB ════════════════════ -->
+<div class="tab-panel" id="tab-courses">
+  {% if courses %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="flex items-center justify-between" style="padding:16px 20px;border-bottom:1px solid #1a1a1a;">
+      <p class="section-label" style="margin:0;">{{ courses|length }} course{{ 's' if courses|length != 1 }}</p>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteAll('course', 'courses')">
+        <i class="fas fa-trash"></i> Delete All
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Title</th><th>Difficulty</th><th>Modules</th><th>Language</th><th>Created</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in courses %}
+          <tr id="row-course-{{ c.id }}">
+            <td class="td-title"><span>{{ c.title or c.topic }}</span></td>
+            <td>
+              {% if c.difficulty == 'Beginner' %}<span style="background:rgba(34,197,94,.12);color:var(--green);border-radius:6px;padding:2px 8px;font-size:13px;font-weight:700;">{{ c.difficulty }}</span>
+              {% elif c.difficulty == 'Advanced' %}<span style="background:rgba(239,68,68,.12);color:var(--red);border-radius:6px;padding:2px 8px;font-size:13px;font-weight:700;">{{ c.difficulty }}</span>
+              {% else %}<span style="background:rgba(245,158,11,.12);color:var(--yellow);border-radius:6px;padding:2px 8px;font-size:13px;font-weight:700;">{{ c.difficulty }}</span>{% endif %}
+            </td>
+            <td><span class="badge badge-blue">{{ c.total_modules }}</span></td>
+            <td>{{ c.language }}</td>
+            <td>{{ c.created_at.strftime('%b %d, %Y') }}</td>
+            <td style="text-align:right;">
+              <div style="display:flex;gap:6px;justify-content:flex-end;">
+                <a href="/coursegen/{{ c.id }}" class="btn btn-xs btn-ghost" title="View"><i class="fas fa-eye"></i></a>
+                <button class="btn btn-xs btn-danger" onclick="confirmDeleteRecord('course', {{ c.id }}, '{{ (c.title or c.topic)|replace("'","") }}')" title="Delete"><i class="fas fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon"><i class="fas fa-graduation-cap"></i></div>
+    <p>No courses generated yet.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ════════════════════ NEWSLETTERS TAB ════════════════════ -->
+<div class="tab-panel" id="tab-newsletters">
+  {% if newsletters %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="flex items-center justify-between" style="padding:16px 20px;border-bottom:1px solid #1a1a1a;">
+      <p class="section-label" style="margin:0;">{{ newsletters|length }} newsletter{{ 's' if newsletters|length != 1 }}</p>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteAll('newsletter', 'newsletters')">
+        <i class="fas fa-trash"></i> Delete All
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr><th>Subject</th><th>Audience</th><th>Tone</th><th>Created</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for n in newsletters %}
+          <tr id="row-newsletter-{{ n.id }}">
+            <td class="td-title"><span>{{ n.subject }}</span></td>
+            <td>{{ n.audience }}</td>
+            <td>
+              {% if n.tone == 'Professional' %}<span class="badge badge-blue">{{ n.tone }}</span>
+              {% elif n.tone == 'Casual' %}<span class="badge badge-green">{{ n.tone }}</span>
+              {% elif n.tone == 'Inspiring' %}<span class="badge badge-yellow">{{ n.tone }}</span>
+              {% elif n.tone == 'Friendly' %}<span class="badge badge-brown">{{ n.tone }}</span>
+              {% elif n.tone == 'Educational' %}<span class="badge badge-red">{{ n.tone }}</span>
+              {% else %}<span class="badge badge-gray">{{ n.tone }}</span>{% endif %}
+            </td>
+            <td>{{ n.created_at.strftime('%b %d, %Y') }}</td>
+            <td style="text-align:right;">
+              <div style="display:flex;gap:6px;justify-content:flex-end;">
+                <a href="/emailnewsgen/{{ n.id }}" class="btn btn-xs btn-ghost" title="View"><i class="fas fa-eye"></i></a>
+                <button class="btn btn-xs btn-danger" onclick="confirmDeleteRecord('newsletter', {{ n.id }}, '{{ n.subject|replace("'","") }}')" title="Delete"><i class="fas fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon"><i class="fas fa-envelope-open-text"></i></div>
+    <p>No newsletters generated yet.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ════════════════════ BOOKS TAB ════════════════════ -->
+<div class="tab-panel" id="tab-books">
+  {% if books %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="flex items-center justify-between" style="padding:16px 20px;border-bottom:1px solid #1a1a1a;">
+      <p class="section-label" style="margin:0;">{{ books|length }} book{{ 's' if books|length != 1 }}</p>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteAll('book', 'activity books')">
+        <i class="fas fa-trash"></i> Delete All
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr><th>Theme</th><th>Age Group</th><th>Difficulty</th><th>Created</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for b in books %}
+          <tr id="row-book-{{ b.id }}">
+            <td class="td-title"><span>{{ b.theme }}</span></td>
+            <td>{{ b.age_group }}</td>
+            <td>
+              {% if b.difficulty == 'Easy' %}<span class="badge badge-green">{{ b.difficulty }}</span>
+              {% elif b.difficulty == 'Hard' %}<span class="badge badge-red">{{ b.difficulty }}</span>
+              {% else %}<span class="badge badge-yellow">{{ b.difficulty }}</span>{% endif %}
+            </td>
+            <td>{{ b.created_at.strftime('%b %d, %Y') }}</td>
+            <td style="text-align:right;">
+              <div style="display:flex;gap:6px;justify-content:flex-end;">
+                <a href="/actgen/{{ b.id }}" class="btn btn-xs btn-ghost" title="View"><i class="fas fa-eye"></i></a>
+                <button class="btn btn-xs btn-danger" onclick="confirmDeleteRecord('book', {{ b.id }}, '{{ b.theme|replace("'","") }}')" title="Delete"><i class="fas fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon"><i class="fas fa-puzzle-piece"></i></div>
+    <p>No activity books generated yet.</p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Confirm overlay ── -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Confirm Delete</h3>
+    <p id="confirmMsg">Are you sure?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-danger" style="flex:1;" id="confirmBtn">Delete</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeConfirm()">Cancel</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Tab switching ──────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── Visibility toggle ──────────────────────────────────────────────────────────
+function toggleVis(id) {
+  const inp  = document.getElementById('sval-' + id);
+  const icon = document.getElementById('vis-icon-' + id);
+  if (inp.type === 'password') { inp.type = 'text'; icon.className = 'fas fa-eye-slash'; }
+  else { inp.type = 'password'; icon.className = 'fas fa-eye'; }
+}
+
+// ── Save setting ───────────────────────────────────────────────────────────────
+async function saveSetting(id) {
+  const inp = document.getElementById('sval-' + id);
+  const res = await fetch('/admin/settings/save', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: inp.dataset.key, value: inp.value })
+  });
+  const d = await res.json();
+  if (d.success) showMsg('Saved ' + inp.dataset.key, 'success');
+  else showMsg(d.error || 'Save failed', 'error');
+}
+
+// ── Add setting ────────────────────────────────────────────────────────────────
+async function addSetting() {
+  const key = document.getElementById('newKey').value.trim().toUpperCase().replace(/\s+/g, '_');
+  const val = document.getElementById('newVal').value.trim();
+  if (!key) { showMsg('Key is required', 'error'); return; }
+  const res = await fetch('/admin/settings/add', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value: val })
+  });
+  const d = await res.json();
+  if (d.error) { showMsg(d.error, 'error'); return; }
+  const isSecret = key.includes('KEY') || key.includes('SECRET') || key.includes('TOKEN') || key.includes('PASSWORD');
+  const list = document.getElementById('settingsList');
+  const row = document.createElement('div');
+  row.className = 'setting-row'; row.id = 'srow-' + d.id;
+  row.innerHTML = `
+    <div class="setting-key">
+      ${isSecret ? `<span class="key-badge"><i class="fas fa-key" style="font-size:9px;margin-right:4px;"></i>${d.key}</span>` : d.key}
+    </div>
+    <div class="setting-val-wrap">
+      <input class="input" id="sval-${d.id}" type="${isSecret ? 'password' : 'text'}"
+        value="${escHtml(d.value)}" placeholder="(empty)"
+        data-key="${d.key}" data-secret="${isSecret}"
+        onkeydown="if(event.key==='Enter') saveSetting(${d.id})">
+      ${isSecret ? `<button class="toggle-vis" onclick="toggleVis(${d.id})" title="Show/hide"><i class="fas fa-eye" id="vis-icon-${d.id}"></i></button>` : ''}
+    </div>
+    <div class="setting-actions">
+      <button class="btn btn-sm btn-ghost-accent" onclick="saveSetting(${d.id})"><i class="fas fa-check"></i> Save</button>
+      <button class="btn btn-sm btn-danger btn-icon" onclick="confirmDeleteSetting(${d.id}, '${d.key}')" title="Delete"><i class="fas fa-trash"></i></button>
+    </div>`;
+  list.appendChild(row);
+  document.getElementById('newKey').value = '';
+  document.getElementById('newVal').value = '';
+  showMsg('Setting added', 'success');
+}
+
+// ── Confirm helpers ────────────────────────────────────────────────────────────
+function openConfirm(title, msg, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent   = msg;
+  document.getElementById('confirmBtn').onclick = async () => { closeConfirm(); await cb(); };
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+document.getElementById('confirmOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeConfirm();
+});
+
+function confirmDeleteSetting(id, key) {
+  openConfirm('Delete Setting', `Delete "${key}"? This cannot be undone.`, async () => {
+    const res = await fetch('/admin/settings/delete/' + id, { method: 'POST' });
+    const d = await res.json();
+    if (d.success) { document.getElementById('srow-' + id)?.remove(); showMsg('Deleted ' + key, 'success'); }
+    else showMsg(d.error || 'Delete failed', 'error');
+  });
+}
+
+function confirmDeleteRecord(model, id, label) {
+  openConfirm('Delete Record', `Delete "${label}"? This cannot be undone.`, async () => {
+    const res = await fetch(`/admin/data/delete/${model}/${id}`, { method: 'POST' });
+    const d = await res.json();
+    if (d.success) { document.getElementById(`row-${model}-${id}`)?.remove(); showMsg('Deleted', 'success'); }
+    else showMsg(d.error || 'Delete failed', 'error');
+  });
+}
+
+function confirmDeleteAll(model, label) {
+  openConfirm('Delete All', `Delete all ${label}? This cannot be undone.`, async () => {
+    const res = await fetch('/admin/data/delete-all/' + model, { method: 'POST' });
+    const d = await res.json();
+    if (d.success) { showMsg('All ' + label + ' deleted', 'success'); setTimeout(() => location.reload(), 1000); }
+    else showMsg(d.error || 'Delete failed', 'error');
+  });
+}
+
+async function setAdminPassword() {
+  const inp = document.getElementById('adminPwInput');
+  const pw  = inp.value.trim();
+  if (!pw) { showMsg('Password cannot be empty', 'error'); return; }
+  const res = await fetch('/admin/settings/set-password', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw })
+  });
+  const d = await res.json();
+  if (d.success) { inp.value = ''; showMsg('Admin password updated', 'success'); setTimeout(() => location.reload(), 800); }
+  else showMsg(d.error || 'Failed to set password', 'error');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+{% endblock %}

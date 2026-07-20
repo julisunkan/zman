@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+{% block title %}Newsletter Generator{% endblock %}
+{% block navbar_brand %}<span class="navbar-brand"><i class="fas fa-envelope-open-text"></i> Newsletter Generator</span>{% endblock %}
+{% block nav_newsletter %}active{% endblock %}
+{% block accent %}#22c55e{% endblock %}
+{% block accent_dark %}#16a34a{% endblock %}
+
+{% block head %}
+<style>
+/* Preview placeholder */
+.preview-placeholder {
+  min-height: 460px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  border: 2px dashed rgba(255,255,255,.10); border-radius: 18px; background: rgba(16,10,30,.85);
+  transition: border-color .3s;
+}
+.preview-placeholder:hover { border-color: #2a2a2a; }
+.preview-placeholder .ph-icon {
+  font-size: 48px; opacity: .07;
+  animation: float 3s ease-in-out infinite;
+}
+.preview-placeholder p { color: #2e2e2e; font-size: 15.5px; }
+
+/* Tone pills */
+.tone-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.tone-pill {
+  padding: 8px 16px; border-radius: 20px; font-size: 14.5px; font-weight: 700;
+  border: 1.5px solid #222; background: #141414; color: #444;
+  cursor: pointer; transition: all .18s; user-select: none;
+}
+.tone-pill.selected { color: #fff; border-color: transparent; }
+.tone-pill[data-tone="Professional"].selected { background: linear-gradient(135deg,var(--blue),var(--blue-dark));   box-shadow: 0 4px 14px rgba(59,130,246,.35); }
+.tone-pill[data-tone="Casual"].selected       { background: linear-gradient(135deg,var(--green),var(--green-dark)); box-shadow: 0 4px 14px rgba(34,197,94,.35); }
+.tone-pill[data-tone="Inspiring"].selected    { background: linear-gradient(135deg,var(--yellow),var(--yellow-dark));box-shadow: 0 4px 14px rgba(245,158,11,.35); }
+.tone-pill[data-tone="Friendly"].selected     { background: linear-gradient(135deg,var(--brown),var(--brown-dark));  box-shadow: 0 4px 14px rgba(180,83,9,.35); }
+.tone-pill[data-tone="Educational"].selected  { background: linear-gradient(135deg,var(--red),var(--red-dark));      box-shadow: 0 4px 14px rgba(239,68,68,.35); }
+.tone-pill:hover:not(.selected) { border-color: #333; color: #aaa; background: #1a1a1a; }
+
+/* Subject result */
+.subject-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: color-mix(in srgb,var(--accent) 10%,transparent);
+  border: 1px solid color-mix(in srgb,var(--accent) 30%,transparent);
+  color: var(--accent); border-radius: 10px; padding: 9px 16px;
+  font-size: 15.5px; font-weight: 700; margin-bottom: 14px;
+  animation: fadeInUp .35s ease; width: 100%;
+}
+.subject-pill i { flex-shrink: 0; }
+
+/* Newsletter history item */
+.nl-history-item {
+  display: flex; align-items: center; gap: 13px;
+  background: #111; border: 1px solid #1e1e1e; border-radius: 13px;
+  padding: 14px 16px; margin-bottom: 8px;
+  transition: border-color .2s, background .2s, transform .2s;
+  position: relative; overflow: hidden;
+}
+.nl-history-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--green), var(--blue));
+  opacity: 0; transition: opacity .2s;
+}
+.nl-history-item:hover::before { opacity: 1; }
+.nl-history-item:hover {
+  border-color: rgba(34,197,94,.35); background: #141414; transform: translateX(3px);
+}
+
+/* Form card header */
+.form-card-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px; padding-bottom: 16px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.form-card-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(34,197,94,.15); color: var(--green);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  flex-shrink: 0;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header anim-up">
+  <h1><i class="fas fa-envelope-open-text"></i> Newsletter Generator</h1>
+  <p class="subtitle">AI-crafted email newsletters — styled, professional, ready to send</p>
+</div>
+
+<div class="color-bar"></div>
+
+<div class="split-lg">
+
+  <!-- ── Left: form ── -->
+  <div class="sticky-col">
+    <div class="card card-glow anim-up d1">
+      <div class="form-card-header">
+        <div class="form-card-icon"><i class="fas fa-pen-to-square"></i></div>
+        <div>
+          <div style="font-size:16px;font-weight:800;color:#e0e0e0;">Create Newsletter</div>
+          <div style="font-size:14px;color:#3a3a3a;margin-top:2px;">Styled &amp; ready to send</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Topic</label>
+        <textarea class="textarea" id="topic" rows="3"
+          placeholder="e.g. Top AI trends this week, Product launch announcement…"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Audience</label>
+        <input class="input" id="audience" placeholder="e.g. Developers, Marketers, Entrepreneurs">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Tone</label>
+        <div class="tone-pills" id="tonePills">
+          <div class="tone-pill selected" data-tone="Professional" onclick="selectTone(this)">Professional</div>
+          <div class="tone-pill" data-tone="Casual"       onclick="selectTone(this)">Casual</div>
+          <div class="tone-pill" data-tone="Inspiring"    onclick="selectTone(this)">Inspiring</div>
+          <div class="tone-pill" data-tone="Friendly"     onclick="selectTone(this)">Friendly</div>
+          <div class="tone-pill" data-tone="Educational"  onclick="selectTone(this)">Educational</div>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="form-group mb-0">
+          <label class="form-label">Sections</label>
+          <select class="select" id="num_sections">
+            <option value="2">2 sections</option>
+            <option value="3" selected>3 sections</option>
+            <option value="4">4 sections</option>
+            <option value="5">5 sections</option>
+          </select>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">CTA Text</label>
+          <input class="input" id="cta_text" placeholder="Read More" value="Read More">
+        </div>
+      </div>
+
+      <button class="btn btn-success" id="genBtn" onclick="generate()" style="margin-top:18px;">
+        <i class="fas fa-wand-magic-sparkles"></i> Generate Newsletter
+      </button>
+    </div>
+
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <div>
+        <div class="loader-text" style="font-weight:700;color:#888;">Crafting your newsletter…</div>
+        <div class="loader-text" style="font-size:14px;margin-top:2px;">15–20 seconds</div>
+      </div>
+    </div>
+
+    <!-- What you get -->
+    <div class="card-flat anim-up d3" style="margin-top:0;">
+      <p class="section-label" style="margin-top:0;">What you get</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="feat-icon feat-icon-green" style="width:30px;height:30px;font-size:15px;border-radius:8px;flex-shrink:0;"><i class="fas fa-code"></i></div>
+          <span style="font-size:14.5px;color:#666;font-weight:600;">Styled HTML</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="feat-icon feat-icon-blue" style="width:30px;height:30px;font-size:15px;border-radius:8px;flex-shrink:0;"><i class="fas fa-eye"></i></div>
+          <span style="font-size:14.5px;color:#666;font-weight:600;">Live preview</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="feat-icon feat-icon-yellow" style="width:30px;height:30px;font-size:15px;border-radius:8px;flex-shrink:0;"><i class="fas fa-download"></i></div>
+          <span style="font-size:14.5px;color:#666;font-weight:600;">Download file</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="feat-icon feat-icon-brown" style="width:30px;height:30px;font-size:15px;border-radius:8px;flex-shrink:0;"><i class="fas fa-copy"></i></div>
+          <span style="font-size:14.5px;color:#666;font-weight:600;">Copy source</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div style="margin-top:20px;">
+      <div class="flex items-center justify-between" style="margin-bottom:14px;">
+        <p class="section-label" style="margin:0;">
+          <i class="fas fa-clock-rotate-left" style="color:var(--brown);margin-right:6px;"></i>
+          Recent Newsletters
+        </p>
+        {% if newsletters %}
+        <span class="badge badge-green">{{ newsletters|length }}</span>
+        {% endif %}
+      </div>
+      <div id="historyList">
+        {% if newsletters %}
+          {% for nl in newsletters %}
+          <div class="nl-history-item" id="nl-{{ nl.id }}">
+            <div class="history-icon" style="background:rgba(34,197,94,.1);color:var(--green);">
+              <i class="fas fa-envelope"></i>
+            </div>
+            <div class="history-meta" onclick="downloadNl({{ nl.id }})" style="cursor:pointer;">
+              <div class="title">{{ nl.subject }}</div>
+              <div class="sub">{{ nl.tone }} &middot; {{ nl.created_at.strftime('%b %d, %Y') }}</div>
+            </div>
+            <div id="nl-del-{{ nl.id }}" style="display:flex;align-items:center;gap:4px;">
+              <button class="btn btn-icon" onclick="askDeleteNl({{ nl.id }})" title="Delete">
+                <i class="fas fa-trash" style="font-size:13px;color:var(--red);"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="empty-state" id="emptyState">
+            <div class="icon"><i class="fas fa-envelope-open"></i></div>
+            <p>No newsletters yet. Generate your first one!</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: preview ── -->
+  <div class="anim-up d2">
+    <div id="previewPlaceholder" class="preview-placeholder">
+      <i class="fas fa-envelope-open-text ph-icon"></i>
+      <p>Your newsletter preview will appear here</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+        <span class="chip chip-green"><i class="fas fa-check"></i> Styled HTML</span>
+        <span class="chip chip-blue"><i class="fas fa-download"></i> Downloadable</span>
+        <span class="chip chip-brown"><i class="fas fa-code"></i> Source included</span>
+      </div>
+    </div>
+
+    <div id="resultSection" class="hidden">
+      <div id="subjectPill" class="subject-pill">
+        <i class="fas fa-envelope"></i>
+        <span id="subjectLine"></span>
+      </div>
+
+      <div class="flex items-center justify-between gap-12" style="margin-bottom:14px;flex-wrap:wrap;">
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" onclick="copyHtml()">
+            <i class="fas fa-copy"></i> Copy HTML
+          </button>
+          <button class="btn btn-success btn-sm" id="downloadBtn">
+            <i class="fas fa-download"></i> Download
+          </button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tabPreview', this)">
+          <i class="fas fa-eye"></i> Preview
+        </button>
+        <button class="tab-btn" onclick="switchTab('tabHtml', this)">
+          <i class="fas fa-code"></i> HTML Source
+        </button>
+      </div>
+
+      <div class="tab-panel active" id="tabPreview">
+        <div class="nl-preview-wrap">
+          <iframe id="nlFrame" srcdoc="" style="width:100%;height:520px;border:none;display:block;"></iframe>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="tabHtml">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <pre id="htmlSource" style="padding:18px;font-size:14px;color:#666;overflow-x:auto;max-height:520px;white-space:pre-wrap;word-break:break-all;margin:0;background:transparent;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _nlId = null, _rawHtml = '', _tone = 'Professional';
+
+function selectTone(el) {
+  document.querySelectorAll('.tone-pill').forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+  _tone = el.dataset.tone;
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('#resultSection .tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#resultSection .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+async function generate() {
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) { showMsg('Please enter a topic.', 'warn'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  document.getElementById('loader').classList.add('show');
+  hideMsg();
+
+  try {
+    const r = await fetch('/emailnewsgen/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        audience:     document.getElementById('audience').value || 'General audience',
+        tone:         _tone,
+        num_sections: document.getElementById('num_sections').value,
+        cta_text:     document.getElementById('cta_text').value || 'Read More',
+      })
+    });
+    const d = await r.json();
+    if (d.success) {
+      showResult(d.id, d.subject, d.content_html);
+      prependHistory(d.id, d.subject, _tone);
+      showMsg('Newsletter generated!', 'success');
+    } else {
+      showMsg(d.error || 'Generation failed.', 'error');
+    }
+  } catch(e) {
+    showMsg('Network error. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('loader').classList.remove('show');
+  }
+}
+
+function showResult(id, subject, html) {
+  _nlId = id; _rawHtml = html;
+  document.getElementById('previewPlaceholder').classList.add('hidden');
+  document.getElementById('resultSection').classList.remove('hidden');
+  document.getElementById('subjectLine').textContent = subject;
+  document.getElementById('nlFrame').srcdoc = html;
+  document.getElementById('htmlSource').textContent = html;
+  document.getElementById('downloadBtn').onclick = () => { window.location.href = '/emailnewsgen/' + id + '/download'; };
+  document.querySelectorAll('#resultSection .tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#resultSection .tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tabPreview').classList.add('active');
+  document.querySelector('#resultSection .tab-btn').classList.add('active');
+}
+
+function prependHistory(id, subject, tone) {
+  const list  = document.getElementById('historyList');
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.remove();
+  const el = document.createElement('div');
+  el.className = 'nl-history-item'; el.id = 'nl-' + id;
+  el.innerHTML = `
+    <div class="history-icon" style="background:rgba(34,197,94,.1);color:var(--green);"><i class="fas fa-envelope"></i></div>
+    <div class="history-meta" onclick="downloadNl(${id})" style="cursor:pointer;">
+      <div class="title">${subject}</div>
+      <div class="sub">${tone} &middot; Just now</div>
+    </div>
+    <div id="nl-del-${id}" style="display:flex;align-items:center;gap:4px;">
+      <button class="btn btn-icon" onclick="askDeleteNl(${id})" title="Delete">
+        <i class="fas fa-trash" style="font-size:13px;color:var(--red);"></i>
+      </button>
+    </div>`;
+  list.prepend(el);
+}
+
+function downloadNl(id) { window.location.href = '/emailnewsgen/' + id + '/download'; }
+
+function askDeleteNl(id) {
+  const wrap = document.getElementById('nl-del-' + id);
+  wrap.innerHTML = `
+    <span style="font-size:14px;color:#fca5a5;white-space:nowrap;">Delete?</span>
+    <button class="btn btn-danger btn-xs" onclick="doDeleteNl(${id})"><i class="fas fa-check"></i> Yes</button>
+    <button class="btn btn-ghost btn-xs" onclick="cancelDeleteNl(${id})">No</button>`;
+}
+
+function cancelDeleteNl(id) {
+  const wrap = document.getElementById('nl-del-' + id);
+  wrap.innerHTML = `
+    <button class="btn btn-icon" onclick="askDeleteNl(${id})" title="Delete">
+      <i class="fas fa-trash" style="font-size:13px;color:var(--red);"></i>
+    </button>`;
+}
+
+async function doDeleteNl(id) {
+  const r = await fetch('/emailnewsgen/' + id + '/delete', { method: 'POST' });
+  const d = await r.json();
+  if (d.success) {
+    document.getElementById('nl-' + id)?.remove();
+    if (_nlId === id) {
+      document.getElementById('resultSection').classList.add('hidden');
+      document.getElementById('previewPlaceholder').classList.remove('hidden');
+    }
+    showMsg('Deleted.', 'success');
+  }
+}
+
+function copyHtml() {
+  if (!_rawHtml) { showMsg('Nothing to copy.', 'warn'); return; }
+  navigator.clipboard.writeText(_rawHtml).then(() => showMsg('HTML copied!', 'success'));
+}
+</script>
+{% endblock %}

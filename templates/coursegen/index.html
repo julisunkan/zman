@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+{% block title %}Course Generator{% endblock %}
+{% block navbar_brand %}<span class="navbar-brand"><i class="fas fa-graduation-cap"></i> Course Generator</span>{% endblock %}
+{% block nav_course %}active{% endblock %}
+{% block accent %}#3b82f6{% endblock %}
+{% block accent_dark %}#2563eb{% endblock %}
+
+{% block head %}
+<style>
+/* ── Progress panel ── */
+.progress-panel {
+  display: none;
+  background: #111;
+  border: 1px solid #1d1d1d;
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 12px;
+  animation: fadeInUp .3s ease both;
+}
+.progress-panel.show { display: block; }
+.progress-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.progress-spinner {
+  width: 22px; height: 22px; flex-shrink: 0;
+  border: 2.5px solid #222; border-top-color: var(--accent);
+  border-radius: 50%; animation: spin .7s linear infinite;
+}
+.progress-title { font-size: 15.5px; font-weight: 700; color: #ccc; }
+.progress-sub   { font-size: 14px; color: #444; margin-top: 2px; }
+
+.progress-bar-wrap { background: #1a1a1a; border-radius: 20px; height: 5px; margin-bottom: 14px; }
+.progress-bar-fill {
+  height: 100%; border-radius: 20px;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  transition: width .4s;
+}
+
+.module-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.module-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px; font-size: 13.5px; font-weight: 600;
+  background: #151515; border: 1px solid #222; color: #3a3a3a;
+  transition: all .2s;
+}
+.module-pill.done   { background: color-mix(in srgb,var(--green) 12%,transparent); border-color: color-mix(in srgb,var(--green) 30%,transparent); color: var(--green); }
+.module-pill.active { background: #1a1a1a; border-color: #333; color: #aaa; }
+.module-pill i { font-size: 12px; }
+
+/* ── Advanced options collapsible ── */
+.adv-toggle {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 700; color: #3a3a3a;
+  cursor: pointer; margin: 12px 0 0;
+  background: none; border: none; font-family: inherit;
+  text-transform: uppercase; letter-spacing: .07em; width: 100%; text-align: left;
+  transition: color .15s; padding: 8px 0;
+}
+.adv-toggle:hover { color: #888; }
+.adv-toggle i { transition: transform .2s; font-size: 13px; }
+.adv-toggle.open i { transform: rotate(90deg); }
+.adv-body { display: none; margin-top: 12px; }
+.adv-body.show { display: block; animation: fadeInUp .25s ease both; }
+
+/* ── Courses sticky column ── */
+.courses-sticky-col {
+  position: sticky;
+  top: 72px;
+  max-height: calc(100vh - 92px);
+  overflow-y: auto;
+  align-self: start;
+  scrollbar-width: none;
+}
+.courses-sticky-col::-webkit-scrollbar { display: none; }
+
+@media (max-width: 860px) {
+  .courses-sticky-col {
+    position: sticky;
+    top: 58px;
+    max-height: 38vh;
+    overflow-y: auto;
+    order: -1;
+    z-index: 10;
+    background: #0d0b18;
+    padding-bottom: 8px;
+    /* subtle bottom shadow so form scrolling underneath is visible */
+    box-shadow: 0 8px 24px 8px #0d0b18;
+  }
+}
+
+/* ── Color accent on form card ── */
+.form-card-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #1a1a1a;
+}
+.form-card-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(59,130,246,.15); color: var(--blue);
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Course history colorful items ── */
+.course-item {
+  display: flex; align-items: center; gap: 13px;
+  background: #111; border: 1px solid #1e1e1e; border-radius: 13px;
+  padding: 14px 16px; margin-bottom: 8px;
+  cursor: pointer;
+  transition: border-color .2s, background .2s, transform .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
+}
+.course-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(180deg, var(--blue), var(--green));
+  opacity: 0; transition: opacity .2s;
+}
+.course-item:hover::before { opacity: 1; }
+.course-item:hover {
+  border-color: rgba(59,130,246,.4);
+  background: #141414; transform: translateX(4px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+}
+
+/* ── Difficulty badges ── */
+.diff-badge-beginner     { background: rgba(34,197,94,.12);  color: var(--green);  border-radius: 6px; padding: 2px 8px; font-size: 13px; font-weight: 700; }
+.diff-badge-intermediate { background: rgba(245,158,11,.12); color: var(--yellow); border-radius: 6px; padding: 2px 8px; font-size: 13px; font-weight: 700; }
+.diff-badge-advanced     { background: rgba(239,68,68,.12);  color: var(--red);    border-radius: 6px; padding: 2px 8px; font-size: 13px; font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header anim-up">
+  <h1><i class="fas fa-graduation-cap"></i> Course Generator</h1>
+  <p class="subtitle">AI-powered courses with modules, quizzes &amp; assignments — export as PDF or DOCX</p>
+</div>
+
+<div class="color-bar"></div>
+
+<div class="split">
+
+  <!-- ── Left: form ── -->
+  <div class="sticky-col">
+    <div class="card card-glow anim-up d1">
+      <div class="form-card-header">
+        <div class="form-card-icon"><i class="fas fa-wand-magic-sparkles"></i></div>
+        <div>
+          <div style="font-size:16px;font-weight:800;color:#e0e0e0;">Generate a New Course</div>
+          <div style="font-size:14px;color:#3a3a3a;margin-top:2px;">Powered by Groq AI</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Topic</label>
+        <textarea class="textarea" id="topic" rows="3"
+          placeholder="e.g. Introduction to Machine Learning, Python for Beginners…"></textarea>
+      </div>
+
+      <div class="input-row">
+        <div class="form-group mb-0">
+          <label class="form-label">Modules</label>
+          <select class="select" id="num_modules">
+            <option value="2">2 modules</option>
+            <option value="3" selected>3 modules</option>
+            <option value="4">4 modules</option>
+            <option value="5">5 modules</option>
+            <option value="8">8 modules</option>
+            <option value="10">10 modules</option>
+            <option value="15">15 modules</option>
+            <option value="20">20 modules</option>
+            <option value="25">25 modules</option>
+            <option value="30">30 modules</option>
+            <option value="40">40 modules</option>
+            <option value="50">50 modules</option>
+          </select>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Difficulty</label>
+          <select class="select" id="difficulty">
+            <option>Beginner</option>
+            <option>Intermediate</option>
+            <option>Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:14px;">
+        <label class="form-label">Language</label>
+        <input class="input" id="language" placeholder="English" value="English">
+      </div>
+
+      <!-- Advanced options -->
+      <button class="adv-toggle" id="advToggle" onclick="toggleAdv()">
+        <i class="fas fa-chevron-right"></i> Advanced options
+      </button>
+      <div class="adv-body" id="advBody">
+        <div class="input-row" style="margin-top:0;">
+          <div class="form-group mb-0">
+            <label class="form-label">Words / module</label>
+            <select class="select" id="words_per_module">
+              <option value="150">~150 words</option>
+              <option value="300" selected>~300 words</option>
+              <option value="500">~500 words</option>
+              <option value="750">~750 words</option>
+              <option value="1000">~1 000 words</option>
+              <option value="1500">~1 500 words</option>
+            </select>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">Quiz questions</label>
+            <select class="select" id="quiz_count">
+              <option value="1">1 question</option>
+              <option value="2">2 questions</option>
+              <option value="3" selected>3 questions</option>
+              <option value="5">5 questions</option>
+              <option value="8">8 questions</option>
+              <option value="10">10 questions</option>
+              <option value="15">15 questions</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;margin-bottom:0;">
+          <label class="form-label">Assignment</label>
+          <select class="select" id="include_assignment">
+            <option value="true" selected>Include assignment per module</option>
+            <option value="false">No assignment</option>
+          </select>
+        </div>
+      </div>
+      <!-- /Advanced -->
+
+      <button class="btn btn-info" id="generateBtn" onclick="startGenerate()" style="margin-top:18px;">
+        <i class="fas fa-wand-magic-sparkles"></i> Generate Course
+      </button>
+    </div>
+
+    <!-- Progress panel -->
+    <div class="progress-panel" id="progressPanel">
+      <div class="progress-header">
+        <div class="progress-spinner" id="progressSpinner"></div>
+        <div>
+          <div class="progress-title" id="progressTitle">Starting…</div>
+          <div class="progress-sub"  id="progressSub"></div>
+        </div>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+      </div>
+      <div class="module-pills" id="modulePills"></div>
+    </div>
+
+    <!-- Info chips -->
+    <div class="card-flat anim-up d3" style="margin-top:0;">
+      <div class="chips">
+        <span class="chip chip-blue"><i class="fas fa-book"></i> Structured modules</span>
+        <span class="chip chip-green"><i class="fas fa-check-circle"></i> Interactive quiz</span>
+        <span class="chip chip-yellow"><i class="fas fa-tasks"></i> Assignments</span>
+        <span class="chip chip-brown"><i class="fas fa-download"></i> PDF export</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Right: history ── -->
+  <div class="courses-sticky-col">
+  <div class="anim-up d2">
+    <div class="flex items-center justify-between" style="margin-bottom:16px;">
+      <p class="section-label" style="margin:0;">
+        <i class="fas fa-clock-rotate-left" style="color:var(--brown);margin-right:6px;"></i>
+        Your Courses
+      </p>
+      {% if courses %}
+      <span class="badge badge-blue">{{ courses|length }} total</span>
+      {% endif %}
+    </div>
+
+    {% if courses %}
+      {% for course in courses %}
+      <div class="course-item" onclick="window.location='/coursegen/{{ course.id }}'">
+        <div class="history-icon" style="background:rgba(59,130,246,.12);color:var(--blue);">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div class="history-meta">
+          <div class="title">{{ course.title }}</div>
+          <div class="sub" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px;">
+            <span class="diff-badge-{{ course.difficulty.lower() }}">{{ course.difficulty }}</span>
+            <span style="color:#2e2e2e;">·</span>
+            <span>{{ course.total_modules }} modules</span>
+            <span style="color:#2e2e2e;">·</span>
+            <span>{{ course.language }}</span>
+            <span style="color:#2e2e2e;">·</span>
+            <span>{{ course.created_at.strftime('%b %d, %Y') }}</span>
+          </div>
+        </div>
+        <i class="fas fa-chevron-right history-arrow"></i>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <div class="icon"><i class="fas fa-book-open"></i></div>
+        <p>No courses yet. Generate your first one!</p>
+      </div>
+    {% endif %}
+  </div><!-- /anim-up -->
+  </div><!-- /courses-sticky-col -->
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Advanced toggle ──────────────────────────────────────────────────────────
+function toggleAdv() {
+  const btn  = document.getElementById('advToggle');
+  const body = document.getElementById('advBody');
+  btn.classList.toggle('open');
+  body.classList.toggle('show');
+}
+
+// ── Generate with SSE streaming ──────────────────────────────────────────────
+let _pills = {};
+
+async function startGenerate() {
+  const topic = document.getElementById('topic').value.trim();
+  if (!topic) { showMsg('Please enter a topic.', 'warn'); return; }
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  _pills = {};
+
+  const panel   = document.getElementById('progressPanel');
+  const spinner = document.getElementById('progressSpinner');
+  panel.classList.add('show');
+  document.getElementById('progressTitle').textContent = 'Connecting…';
+  document.getElementById('progressSub').textContent   = '';
+  document.getElementById('progressBar').style.width   = '0%';
+  document.getElementById('modulePills').innerHTML      = '';
+  hideMsg();
+
+  const payload = {
+    topic,
+    num_modules:        document.getElementById('num_modules').value,
+    difficulty:         document.getElementById('difficulty').value,
+    language:           document.getElementById('language').value.trim() || 'English',
+    words_per_module:   document.getElementById('words_per_module').value,
+    quiz_count:         document.getElementById('quiz_count').value,
+    include_assignment: document.getElementById('include_assignment').value === 'true',
+  };
+
+  try {
+    const resp = await fetch('/coursegen/generate', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+
+    const reader  = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let   buf     = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      let nl;
+      while ((nl = buf.indexOf('\n\n')) !== -1) {
+        const chunk = buf.slice(0, nl);
+        buf = buf.slice(nl + 2);
+        if (!chunk.startsWith('data: ')) continue;
+        let evt;
+        try { evt = JSON.parse(chunk.slice(6)); } catch { continue; }
+        handleEvent(evt);
+      }
+    }
+  } catch (e) {
+    showMsg('Connection error: ' + e.message, 'error');
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    document.getElementById('progressTitle').textContent = 'Error';
+  }
+}
+
+function handleEvent(evt) {
+  const title   = document.getElementById('progressTitle');
+  const sub     = document.getElementById('progressSub');
+  const bar     = document.getElementById('progressBar');
+  const pills   = document.getElementById('modulePills');
+  const spinner = document.getElementById('progressSpinner');
+  const btn     = document.getElementById('generateBtn');
+
+  if (evt.type === 'status') {
+    title.textContent = evt.msg;
+  } else if (evt.type === 'outline') {
+    title.textContent = 'Building modules…';
+    sub.textContent   = evt.title;
+    pills.innerHTML = '';
+    _pills = {};
+    (evt.modules || []).forEach(m => {
+      const pill = document.createElement('div');
+      pill.className = 'module-pill';
+      pill.id = 'pill-' + m.number;
+      pill.innerHTML = `<i class="fas fa-circle"></i> ${m.number}`;
+      pill.title = m.title;
+      pills.appendChild(pill);
+      _pills[m.number] = pill;
+    });
+  } else if (evt.type === 'progress') {
+    title.textContent = `Module ${evt.current} / ${evt.total}`;
+    sub.textContent   = evt.msg;
+    bar.style.width   = Math.round((evt.current - 1) / evt.total * 100) + '%';
+    if (_pills[evt.current]) {
+      _pills[evt.current].classList.add('active');
+      _pills[evt.current].innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + evt.current;
+    }
+  } else if (evt.type === 'module_done') {
+    if (_pills[evt.number]) {
+      _pills[evt.number].classList.remove('active');
+      _pills[evt.number].classList.add('done');
+      _pills[evt.number].innerHTML = '<i class="fas fa-check"></i> ' + evt.number;
+    }
+  } else if (evt.type === 'done') {
+    bar.style.width = '100%';
+    spinner.style.animation = 'none';
+    spinner.style.borderTopColor = '#22c55e';
+    title.textContent = 'Complete! Redirecting…';
+    sub.textContent   = '';
+    setTimeout(() => { window.location = '/coursegen/' + evt.id; }, 600);
+  } else if (evt.type === 'error') {
+    showMsg(evt.msg, 'error');
+    btn.disabled = false;
+    spinner.style.borderTopColor = '#f87171';
+    title.textContent = 'Generation failed';
+    sub.textContent   = '';
+    document.getElementById('progressPanel').classList.remove('show');
+  }
+}
+</script>
+{% endblock %}
