@@ -149,7 +149,7 @@ def generate():
             "- Footer: small grey text with unsubscribe note\n"
             f"- Colour palette should feel {tone.lower()} and professional\n"
             "- All CSS must be inline (no <style> tags)\n"
-            "- Use only double quotes for HTML attributes — escape them as &quot; if needed inside JSON\n"
+            "- Use single quotes for all HTML attribute values (e.g. style='color:red') so the JSON string needs no extra escaping\n"
         )
 
         parsed = groq_newsletter(client, [
