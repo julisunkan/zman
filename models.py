@@ -83,3 +83,15 @@ class Activity(db.Model):
     title          = db.Column(db.String(200))
     data           = db.Column(db.Text)          # JSON payload
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+# ── Content Reports ───────────────────────────────────────────────────────────
+class ContentReport(db.Model):
+    __tablename__  = "content_reports"
+    id             = db.Column(db.Integer, primary_key=True)
+    content_type   = db.Column(db.String(50))              # course | newsletter | book
+    content_id     = db.Column(db.Integer)
+    content_title  = db.Column(db.String(500), default="")  # snapshot at report time
+    reason         = db.Column(db.String(200))
+    details        = db.Column(db.Text, default="")
+    status         = db.Column(db.String(20), default="pending")  # pending | reviewed | dismissed
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)

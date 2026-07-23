@@ -125,6 +125,9 @@
   <a href="/emailnewsgen/{{ nl.id }}/download" class="btn btn-ghost btn-sm">
     <i class="fas fa-download"></i> Download
   </a>
+  <button class="btn btn-ghost btn-sm" onclick="openReportModal('newsletter', {{ nl.id }})" title="Report this content">
+    <i class="fas fa-flag"></i> Report
+  </button>
   <button class="btn btn-success btn-sm" id="saveBtn" onclick="saveNewsletter()">
     <i class="fas fa-floppy-disk"></i> Save
   </button>

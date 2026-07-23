@@ -1,6 +1,6 @@
 import functools
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, session
-from models import db, Setting, Course, Newsletter, ActivityBook
+from models import db, Setting, Course, Newsletter, ActivityBook, ContentReport
 from werkzeug.security import check_password_hash, generate_password_hash
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -60,6 +60,8 @@ def _stats():
         "newsletters": Newsletter.query.count(),
         "books":       ActivityBook.query.count(),
         "settings":    Setting.query.count(),
+        "reports":     ContentReport.query.count(),
+        "pending_reports": ContentReport.query.filter_by(status="pending").count(),
     }
 
 
@@ -73,6 +75,7 @@ def index():
     courses     = Course.query.order_by(Course.created_at.desc()).all()
     newsletters = Newsletter.query.order_by(Newsletter.created_at.desc()).all()
     books       = ActivityBook.query.order_by(ActivityBook.created_at.desc()).all()
+    reports     = ContentReport.query.order_by(ContentReport.created_at.desc()).all()
     return render_template(
         "admin/index.html",
         settings=settings,
@@ -80,6 +83,7 @@ def index():
         courses=courses,
         newsletters=newsletters,
         books=books,
+        reports=reports,
     )
 
 
@@ -171,6 +175,36 @@ def data_delete(model, record_id):
 
     record = cls.query.get_or_404(record_id)
     db.session.delete(record)
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@admin_bp.route("/reports/<int:report_id>/update-status", methods=["POST"])
+@_auth_required
+def report_update_status(report_id):
+    data   = request.get_json() or {}
+    status = data.get("status", "")
+    if status not in ("pending", "reviewed", "dismissed"):
+        return jsonify({"error": "Invalid status."}), 400
+    r = ContentReport.query.get_or_404(report_id)
+    r.status = status
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@admin_bp.route("/reports/<int:report_id>/delete", methods=["POST"])
+@_auth_required
+def report_delete(report_id):
+    r = ContentReport.query.get_or_404(report_id)
+    db.session.delete(r)
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@admin_bp.route("/reports/delete-all", methods=["POST"])
+@_auth_required
+def reports_delete_all():
+    ContentReport.query.delete()
     db.session.commit()
     return jsonify({"success": True})
 

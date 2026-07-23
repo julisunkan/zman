@@ -108,6 +108,9 @@
       <button class="btn btn-warning btn-sm" onclick="window.location.href='/actgen/{{ book.id }}/download'">
         <i class="fas fa-download"></i> Download
       </button>
+      <button class="btn btn-ghost btn-sm" onclick="openReportModal('book', {{ book.id }})" title="Report this content">
+        <i class="fas fa-flag"></i> Report
+      </button>
       <button class="btn btn-danger btn-sm" id="deleteBtn" onclick="showDeleteConfirm()">
         <i class="fas fa-trash"></i> Delete
       </button>

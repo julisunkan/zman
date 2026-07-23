@@ -57,6 +57,90 @@ function hideMsg() {
 
 </script>
 {% block scripts %}{% endblock %}
+<!-- ── Report Modal ─────────────────────────────────────────────────────── -->
+<div class="confirm-overlay" id="reportOverlay" style="z-index:1100;">
+  <div class="confirm-box" style="max-width:460px;">
+    <h3 style="display:flex;align-items:center;gap:10px;">
+      <i class="fas fa-flag" style="color:#ef4444;font-size:18px;"></i> Report Content
+    </h3>
+    <p style="margin-bottom:18px;">Help us keep AI-generated content safe and accurate. Reports are reviewed by an admin.</p>
+
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label" style="margin-bottom:8px;">Reason <span style="color:#ef4444;">*</span></label>
+      <div id="reportReasons" style="display:flex;flex-direction:column;gap:8px;">
+        <label class="report-reason-label"><input type="radio" name="reportReason" value="harmful">      Harmful or offensive content</label>
+        <label class="report-reason-label"><input type="radio" name="reportReason" value="inaccurate">   Inaccurate information</label>
+        <label class="report-reason-label"><input type="radio" name="reportReason" value="inappropriate">Inappropriate for the audience</label>
+        <label class="report-reason-label"><input type="radio" name="reportReason" value="copyright">    Copyright or plagiarism concern</label>
+        <label class="report-reason-label"><input type="radio" name="reportReason" value="other">        Other</label>
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-bottom:20px;">
+      <label class="form-label" style="margin-bottom:6px;">Additional details <span style="color:#444;font-weight:500;">(optional)</span></label>
+      <textarea class="textarea" id="reportDetails" rows="3" placeholder="Describe the issue…" style="resize:vertical;min-height:72px;"></textarea>
+    </div>
+
+    <div class="confirm-actions">
+      <button class="btn btn-danger" style="flex:1;" onclick="submitReport()">
+        <i class="fas fa-flag"></i> Submit Report
+      </button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeReportModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.report-reason-label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 9px;
+  border: 1px solid #1e1e1e; background: #111;
+  font-size: 14.5px; color: #888; cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
+  user-select: none;
+}
+.report-reason-label:hover { border-color: #2e2e2e; background: #161616; color: #ccc; }
+.report-reason-label input[type="radio"] { accent-color: #ef4444; width: 16px; height: 16px; flex-shrink: 0; }
+.report-reason-label:has(input:checked) { border-color: rgba(239,68,68,.4); background: rgba(239,68,68,.07); color: #fca5a5; }
+</style>
+
+<script>
+let _reportType = '', _reportId = 0;
+
+function openReportModal(contentType, contentId) {
+  _reportType = contentType;
+  _reportId   = contentId;
+  document.querySelectorAll('input[name="reportReason"]').forEach(r => r.checked = false);
+  document.getElementById('reportDetails').value = '';
+  document.getElementById('reportOverlay').classList.add('show');
+}
+function closeReportModal() {
+  document.getElementById('reportOverlay').classList.remove('show');
+}
+document.getElementById('reportOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeReportModal();
+});
+
+async function submitReport() {
+  const reason  = document.querySelector('input[name="reportReason"]:checked')?.value;
+  const details = document.getElementById('reportDetails').value.trim();
+  if (!reason) { showMsg('Please select a reason.', 'error', false); return; }
+
+  const res = await fetch('/report/submit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content_type: _reportType, content_id: _reportId, reason, details }),
+  });
+  const d = await res.json();
+  if (d.success) {
+    closeReportModal();
+    showMsg('Report submitted. Thank you.', 'success');
+  } else {
+    showMsg(d.error || 'Failed to submit report.', 'error', false);
+  }
+}
+</script>
+
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

@@ -121,10 +121,12 @@
 .tab-btn[data-tab="courses"]:hover   { color: var(--blue); }
 .tab-btn[data-tab="newsletters"]:hover { color: var(--green); }
 .tab-btn[data-tab="books"]:hover     { color: var(--yellow); }
+.tab-btn[data-tab="reports"]:hover   { color: #f97316; }
 .tab-btn[data-tab="settings"].active { color: var(--red); border-bottom-color: var(--red); }
 .tab-btn[data-tab="courses"].active  { color: var(--blue); border-bottom-color: var(--blue); }
 .tab-btn[data-tab="newsletters"].active { color: var(--green); border-bottom-color: var(--green); }
 .tab-btn[data-tab="books"].active    { color: var(--yellow); border-bottom-color: var(--yellow); }
+.tab-btn[data-tab="reports"].active  { color: #f97316; border-bottom-color: #f97316; }
 
 /* ── Admin page header ── */
 .admin-header {
@@ -175,6 +177,11 @@
     <div class="stat-num">{{ stats.settings }}</div>
     <div class="stat-label">Settings</div>
   </div>
+  <div class="stat-card" style="--sc-color:#f97316;">
+    <div class="stat-icon" style="background:rgba(249,115,22,.14);color:#f97316;"><i class="fas fa-flag"></i></div>
+    <div class="stat-num" style="color:{% if stats.pending_reports > 0 %}#f97316{% else %}#f0f0f0{% endif %};">{{ stats.pending_reports }}</div>
+    <div class="stat-label">Pending Reports</div>
+  </div>
 </div>
 
 <!-- ── Tabs ── -->
@@ -193,6 +200,10 @@
   <button class="tab-btn" data-tab="books" onclick="switchTab('books', this)">
     <i class="fas fa-puzzle-piece"></i> Activity Books
     {% if books %}<span class="badge badge-yellow" style="margin-left:4px;">{{ books|length }}</span>{% endif %}
+  </button>
+  <button class="tab-btn" data-tab="reports" onclick="switchTab('reports', this)">
+    <i class="fas fa-flag"></i> Reports
+    {% if stats.pending_reports > 0 %}<span class="badge" style="margin-left:4px;background:rgba(249,115,22,.15);color:#f97316;">{{ stats.pending_reports }}</span>{% endif %}
   </button>
 </div>
 
@@ -455,6 +466,88 @@
   {% endif %}
 </div>
 
+<!-- ════════════════════ REPORTS TAB ════════════════════ -->
+<div class="tab-panel" id="tab-reports">
+  {% if reports %}
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="flex items-center justify-between" style="padding:16px 20px;border-bottom:1px solid #1a1a1a;">
+      <p class="section-label" style="margin:0;">
+        {{ reports|length }} report{{ 's' if reports|length != 1 }}
+        {% if stats.pending_reports > 0 %}
+        <span class="badge" style="margin-left:8px;background:rgba(249,115,22,.15);color:#f97316;">{{ stats.pending_reports }} pending</span>
+        {% endif %}
+      </p>
+      <button class="btn btn-sm btn-danger" onclick="confirmDeleteAllReports()">
+        <i class="fas fa-trash"></i> Clear All
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr><th>Status</th><th>Type</th><th>Content</th><th>Reason</th><th>Details</th><th>Reported</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for r in reports %}
+          <tr id="row-report-{{ r.id }}">
+            <td>
+              {% if r.status == 'pending' %}
+                <span class="badge" style="background:rgba(249,115,22,.15);color:#f97316;">Pending</span>
+              {% elif r.status == 'reviewed' %}
+                <span class="badge badge-green">Reviewed</span>
+              {% else %}
+                <span class="badge badge-gray">Dismissed</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if r.content_type == 'course' %}
+                <span class="badge badge-blue"><i class="fas fa-graduation-cap" style="margin-right:4px;"></i>Course</span>
+              {% elif r.content_type == 'newsletter' %}
+                <span class="badge badge-green"><i class="fas fa-envelope-open-text" style="margin-right:4px;"></i>Newsletter</span>
+              {% else %}
+                <span class="badge badge-yellow"><i class="fas fa-puzzle-piece" style="margin-right:4px;"></i>Book</span>
+              {% endif %}
+            </td>
+            <td class="td-title">
+              <span title="{{ r.content_title }}">{{ r.content_title or '—' }}</span>
+              <div style="font-size:12px;color:#2e2e2e;margin-top:2px;">ID #{{ r.content_id }}</div>
+            </td>
+            <td style="max-width:200px;font-size:14px;color:#888;">{{ r.reason }}</td>
+            <td style="max-width:180px;font-size:13.5px;color:#555;">
+              {% if r.details %}<span title="{{ r.details }}">{{ r.details | truncate(60) }}</span>{% else %}<span style="color:#2a2a2a;">—</span>{% endif %}
+            </td>
+            <td style="white-space:nowrap;">{{ r.created_at.strftime('%b %d, %Y') }}</td>
+            <td style="text-align:right;">
+              <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:wrap;">
+                {% if r.content_type == 'course' %}
+                  <a href="/coursegen/{{ r.content_id }}" class="btn btn-xs btn-ghost" title="View content" target="_blank"><i class="fas fa-eye"></i></a>
+                {% elif r.content_type == 'newsletter' %}
+                  <a href="/emailnewsgen/{{ r.content_id }}/preview" class="btn btn-xs btn-ghost" title="View content" target="_blank"><i class="fas fa-eye"></i></a>
+                {% else %}
+                  <a href="/actgen/{{ r.content_id }}" class="btn btn-xs btn-ghost" title="View content" target="_blank"><i class="fas fa-eye"></i></a>
+                {% endif %}
+                {% if r.status != 'reviewed' %}
+                <button class="btn btn-xs btn-ghost-accent" onclick="updateReportStatus({{ r.id }}, 'reviewed')" title="Mark reviewed"><i class="fas fa-check"></i></button>
+                {% endif %}
+                {% if r.status != 'dismissed' %}
+                <button class="btn btn-xs btn-ghost" onclick="updateReportStatus({{ r.id }}, 'dismissed')" title="Dismiss" style="color:#555;"><i class="fas fa-xmark"></i></button>
+                {% endif %}
+                <button class="btn btn-xs btn-danger" onclick="deleteReport({{ r.id }})" title="Delete report"><i class="fas fa-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon"><i class="fas fa-flag"></i></div>
+    <p>No reports yet.</p>
+  </div>
+  {% endif %}
+</div>
+
 <!-- ── Confirm overlay ── -->
 <div class="confirm-overlay" id="confirmOverlay">
   <div class="confirm-box">
@@ -588,6 +681,33 @@ async function setAdminPassword() {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Reports ────────────────────────────────────────────────────────────────────
+async function updateReportStatus(id, status) {
+  const res = await fetch(`/admin/reports/${id}/update-status`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+  const d = await res.json();
+  if (d.success) { showMsg('Report updated', 'success'); setTimeout(() => location.reload(), 700); }
+  else showMsg(d.error || 'Update failed', 'error');
+}
+
+async function deleteReport(id) {
+  const res = await fetch(`/admin/reports/${id}/delete`, { method: 'POST' });
+  const d = await res.json();
+  if (d.success) { document.getElementById('row-report-' + id)?.remove(); showMsg('Report deleted', 'success'); }
+  else showMsg(d.error || 'Delete failed', 'error');
+}
+
+function confirmDeleteAllReports() {
+  openConfirm('Clear All Reports', 'Delete all reports permanently? This cannot be undone.', async () => {
+    const res = await fetch('/admin/reports/delete-all', { method: 'POST' });
+    const d = await res.json();
+    if (d.success) { showMsg('All reports cleared', 'success'); setTimeout(() => location.reload(), 700); }
+    else showMsg(d.error || 'Delete failed', 'error');
+  });
 }
 </script>
 {% endblock %}
