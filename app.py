@@ -25,7 +25,9 @@ def create_app():
     from apps.emailnewsgen import emailnewsgen_bp
     from apps.actgen import actgen_bp
     from apps.admin import admin_bp
+    from apps.pwa import pwa_bp
 
+    app.register_blueprint(pwa_bp)
     app.register_blueprint(coursegen_bp)
     app.register_blueprint(emailnewsgen_bp)
     app.register_blueprint(actgen_bp)

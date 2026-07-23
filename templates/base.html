@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>{% block title %}AI Tools{% endblock %}</title>
+
+  <!-- PWA -->
+  {% block manifest_link %}<link rel="manifest" href="/manifest.json">{% endblock %}
+  <meta name="theme-color" content="{% block theme_color %}#7c3aed{% endblock %}">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="{% block apple_title %}AI Tools{% endblock %}">
+  <link rel="apple-touch-icon" href="{% block apple_icon %}/static/icons/home-apple-180.png{% endblock %}">
+
   <link rel="stylesheet" href="/static/css/mobile.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
@@ -47,5 +57,13 @@ function hideMsg() {
 
 </script>
 {% block scripts %}{% endblock %}
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+</script>
 </body>
 </html>
