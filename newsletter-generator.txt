@@ -3,23 +3,23 @@ AI Newsletter Generator
 
 DESCRIPTION
 -----------
-An AI-powered email newsletter designer that produces fully styled, production-ready HTML newsletters in seconds. Specify your topic, target audience, tone, and number of sections, and the tool delivers a complete email with a gradient header banner, clearly structured content sections, a prominent call-to-action button, and a professional footer — all with inline CSS ready to paste into any email platform.
+Craft stunning, send-ready email newsletters in moments — no copywriting skills needed. AI Newsletter Generator lets you describe your topic, pick your audience and voice, and watch as advanced AI builds a complete, beautifully formatted HTML email from scratch. Every newsletter ships with a bold header, well-organised body sections, a compelling call-to-action, and a clean footer — all wrapped in rock-solid inline styles that render perfectly across every major email client and device.
 
 FEATURES
 --------
-- AI-generated newsletter content from any topic
-- Audience targeting (e.g. developers, marketers, executives)
-- Five tone options: Professional, Casual, Inspiring, Friendly, Educational
-- Configurable number of content sections (2–5)
-- Custom call-to-action button text
-- Fully self-contained HTML with 100% inline CSS
-- Live in-browser preview via iframe
-- HTML source viewer for easy copy-paste
-- One-click HTML file download
-- Auto-saved newsletter history (up to 20 recent items)
-- Subject line generation (optimised for open rates)
-- Compatible with Mailchimp, SendGrid, Outlook, and Gmail
+- Instant AI-written newsletter from any topic or industry
+- Precision audience targeting (e.g. small business owners, tech enthusiasts, HR teams)
+- Five distinct writing voices: Professional, Casual, Inspiring, Friendly, Educational
+- Flexible layout with 2 to 5 custom content sections
+- Personalised call-to-action button with editable label text
+- 100% self-contained HTML using fully inlined CSS — no external dependencies
+- Real-time rendered preview directly inside the browser
+- Raw HTML source panel for quick copy-paste into any platform
+- Instant one-click download as a standalone HTML file
+- Built-in history library retaining your 20 latest newsletters
+- Optimised subject line crafted to maximise open rates
+- Drop-in compatible with Mailchimp, Outlook, Gmail, SendGrid, and more
 
 KEYWORDS
 --------
-AI newsletter generator, email marketing tool, HTML email builder, email template generator, AI email writer, newsletter creator, email campaign builder, inline CSS email, email subject line generator, Groq AI newsletter, automated email content, email design tool, marketing email generator, professional newsletter, audience-targeted email, CTA button email, email copywriter AI, newsletter automation, email HTML export, content marketing tool
+AI email writer, newsletter builder, email campaign creator, HTML email generator, email marketing assistant, automated newsletter tool, email copywriting AI, subject line optimizer, inline CSS email maker, audience-targeted email, professional email designer, email content generator, small business newsletter, marketing automation tool, email template creator, AI content writer, send-ready email builder, email engagement tool, newsletter automation, digital marketing assistant

@@ -3,10 +3,10 @@ AI Course Generator
 
 DESCRIPTION
 -----------
-Transform any subject into a fully structured, professional course in seconds. AI Course Generator harnesses the power of cutting-edge large language models to craft comprehensive learning programs complete with rich lesson content, interactive quizzes, and hands-on assignments — no teaching experience required. Whether you're an educator, corporate trainer, or lifelong learner, create publish-ready courses and download them as beautifully formatted PDF or Word documents with a single click.
+Transform any subject into a fully structured, professional course in seconds. Course Generator harnesses the power of cutting-edge large language models to craft comprehensive learning programs complete with rich lesson content, interactive quizzes, and hands-on assignments — no teaching experience required. Whether you're an educator, corporate trainer, or lifelong learner, create publish-ready courses and download them as beautifully formatted PDF or Word documents with a single clic
+
 
 FEATURES
---------
 - One-click course creation from any topic or niche
 - Choose between 2 and 50 learning modules per course
 - Three expertise tiers: Beginner, Intermediate, and Advanced
