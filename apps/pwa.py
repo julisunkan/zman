@@ -4,8 +4,9 @@ from flask import Blueprint, Response
 
 pwa_bp = Blueprint("pwa", __name__)
 
-def _manifest(name, short_name, start_url, scope, theme, bg, icon_prefix):
+def _manifest(name, short_name, start_url, scope, theme, bg, icon_prefix, app_id):
     return {
+        "id": app_id,
         "name": name,
         "short_name": short_name,
         "description": f"{name} — powered by Groq AI",
@@ -50,22 +51,26 @@ MANIFESTS = {
     "home": _manifest(
         "AI Tools Suite", "AI Tools",
         "/", "/",
-        "#7c3aed", "#0a0a0a", "home"
+        "#7c3aed", "#0a0a0a", "home",
+        "ai-tools-suite"
     ),
     "coursegen": _manifest(
         "Course Generator", "Courses",
         "/coursegen/", "/coursegen/",
-        "#3b82f6", "#0a0a0a", "coursegen"
+        "#3b82f6", "#0a0a0a", "coursegen",
+        "ai-tools-course-generator"
     ),
     "emailnewsgen": _manifest(
         "Newsletter Generator", "Newsletter",
         "/emailnewsgen/", "/emailnewsgen/",
-        "#22c55e", "#0a0a0a", "emailnewsgen"
+        "#22c55e", "#0a0a0a", "emailnewsgen",
+        "ai-tools-newsletter-generator"
     ),
     "actgen": _manifest(
         "Activity Book Generator", "Activity Book",
         "/actgen/", "/actgen/",
-        "#f59e0b", "#0a0a0a", "actgen"
+        "#f59e0b", "#0a0a0a", "actgen",
+        "ai-tools-activity-book-generator"
     ),
 }
 
